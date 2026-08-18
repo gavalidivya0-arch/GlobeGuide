@@ -1,4 +1,5 @@
 const API_ALL = './countries.json';
+const API_KEY = 'rc_live_7e8a57f97646446ab84a5f48ec408fa6';
 const CACHE_KEY = 'globeguide_countries_cache';
 const CACHE_TIME = 30 * 60 * 1000; // 30 minutes
 const FAV_KEY = 'globeguide_favorites';
@@ -68,16 +69,16 @@ async function init() {
 async function fetchCountries() {
     showLoading();
     try {
-        const res = await fetch('/api/countries');
+        // Fetch from the real API so search and display work locally
+        const res = await fetch('https://restcountries.com/v3.1/all');
         if (res.ok) {
             allCountries = await res.json();
         } else {
             throw new Error('API failed');
         }
     } catch(e) {
-        // Fallback for offline mode without Node.js server
-        await new Promise(resolve => setTimeout(resolve, 300));
-        allCountries = typeof COUNTRIES_DATA !== 'undefined' ? COUNTRIES_DATA : [];
+        console.error("Failed to load countries:", e);
+        allCountries = []; // Empty array to avoid iterable crashes
     }
 }
 
@@ -701,3 +702,6 @@ function showCountryByCode(code) {
         showCountryDetails(country);
     }
 }
+
+// Run App
+document.addEventListener('DOMContentLoaded', init);

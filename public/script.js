@@ -1,7 +1,11 @@
-const API_ALL = './countries.json';
-const CACHE_KEY = 'globeguide_countries_cache';
+const API_BASE = 'https://api.restcountries.com/countries/v5';
+const API_FIELDS = 'names.common,names.official,codes.alpha_2,codes.alpha_3,flag.url_svg,flag.url_png,capitals,region,subregion,area,population,languages,currencies,timezones,cars,classification.un_member,links.google_maps,calling_codes,borders';
+const API_PAGE_SIZE = 100; // Free plan max
+const API_KEY = (typeof REST_COUNTRIES_API_KEY !== 'undefined') ? REST_COUNTRIES_API_KEY : '';
+const CACHE_KEY = 'globeguide_countries_cache_v5';
 const CACHE_TIME = 30 * 60 * 1000; // 30 minutes
 const FAV_KEY = 'globeguide_favorites';
+const FALLBACK_FLAG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='213'><rect width='100%25' height='100%25' fill='%23e2e8f0'/><text x='50%25' y='55%25' font-size='72' text-anchor='middle' dominant-baseline='middle'>%F0%9F%8C%8D</text></svg>";
 
 let allCountries = [];
 let displayedCountries = [];
@@ -60,25 +64,123 @@ async function init() {
         updateStats();
         applyFiltersAndSort();
     } catch (error) {
-        showError('Unable to load countries data.', 'Please check your connection and try again.');
+        showError('Unable to load countries data.', error.message || 'Please check your connection and try again.');
     }
 }
 
 // Data Fetching
 async function fetchCountries() {
     showLoading();
-    try {
-        // Fetch from the real API so search and display work locally
-        const res = await fetch('https://restcountries.com/v3.1/all');
-        if (res.ok) {
-            allCountries = await res.json();
-        } else {
-            throw new Error('API failed');
+
+    // 1. Serve from cache first (fast, offline-friendly)
+    const cachedData = localStorage.getItem(CACHE_KEY);
+    if (cachedData) {
+        try {
+            const parsedCache = JSON.parse(cachedData);
+            if (Date.now() - parsedCache.timestamp < CACHE_TIME) {
+                allCountries = parsedCache.data;
+                return;
+            }
+        } catch (e) {
+            console.error('Cache parse error', e);
         }
-    } catch(e) {
-        console.error("Failed to load countries:", e);
-        allCountries = []; // Empty array to avoid iterable crashes
     }
+
+    // 2. Load the bundled snapshot (data.js) - always works
+    if (typeof COUNTRIES_DATA !== 'undefined' && Array.isArray(COUNTRIES_DATA)) {
+        allCountries = COUNTRIES_DATA;
+    }
+
+    // 3. Best-effort live refresh from the v5 API (works once the browser
+    //    origin is added to the key's CORS allowlist in the REST Countries dashboard)
+    if (API_KEY) {
+        try {
+            const fresh = await fetchAllCountries();
+            if (fresh && fresh.length) {
+                allCountries = fresh;
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    data: allCountries
+                }));
+            }
+        } catch (e) {
+            console.warn('Live API refresh failed; using bundled data.', e.message);
+        }
+    }
+
+    if (!allCountries.length) {
+        throw new Error('No country data available. Check that data.js is present and your config.js API key is valid.');
+    }
+}
+
+// Paginated fetch + normalization of the REST Countries v5 response
+async function fetchAllCountries() {
+    if (!API_KEY) throw new Error('Missing API key in config.js');
+    const all = [];
+    let offset = 0;
+
+    while (true) {
+        const url = `${API_BASE}?limit=${API_PAGE_SIZE}&offset=${offset}&response_fields=${API_FIELDS}`;
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${API_KEY}` }
+        });
+        if (!response.ok) throw new Error('API Response not OK');
+
+        const json = await response.json();
+        if (json.errors && json.errors.length) throw new Error(json.errors[0].message);
+
+        const objects = json.data?.objects || [];
+        objects.forEach(c => all.push(mapCountry(c)));
+
+        const meta = json.data?.meta || {};
+        offset += API_PAGE_SIZE;
+
+        if (meta.more === false || !objects.length) break;
+        if (all.length >= (meta.total || Infinity)) break;
+    }
+    return all;
+}
+
+// Normalize a v5 API record into the legacy v3.x shape used by the UI
+function mapCountry(c) {
+    const languages = {};
+    (c.languages || []).forEach(l => {
+        const code = l.iso639_1 || l.iso639_3 || '';
+        if (code) languages[code] = l.name;
+    });
+
+    const currencies = {};
+    (c.currencies || []).forEach(cur => {
+        if (cur.code) currencies[cur.code] = { name: cur.name, symbol: cur.symbol };
+    });
+
+    const dialCode = c.calling_codes?.[0] || '';
+
+    return {
+        name: {
+            common: c.names?.common || 'Unknown',
+            official: c.names?.official || 'Unknown'
+        },
+        cca3: c.codes?.alpha_3 || c.codes?.alpha_2 || c.names?.common || '',
+        cca2: c.codes?.alpha_2 || '',
+        flags: {
+            svg: c.flag?.url_svg || '',
+            png: c.flag?.url_png || ''
+        },
+        capital: (c.capitals || []).map(cap => cap.name),
+        region: c.region || '',
+        subregion: c.subregion || '',
+        area: c.area?.kilometers,
+        population: c.population || 0,
+        languages,
+        currencies,
+        timezones: c.timezones || [],
+        car: { side: c.cars?.driving_side || '' },
+        unMember: c.classification?.un_member === true,
+        maps: { googleMaps: c.links?.google_maps || '' },
+        idd: { root: dialCode ? '+' + dialCode : '', suffixes: [''] },
+        borders: c.borders || []
+    };
 }
 
 // Event Listeners Setup
@@ -303,7 +405,7 @@ function renderCountries() {
         const isFav = favorites.has(country.cca3);
         const favClass = isFav ? 'active' : '';
         
-        const flagUrl = country.flags?.svg || country.flags?.png || '';
+        const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
         const name = country.name?.common || 'Unknown';
         const officialName = country.name?.official || 'Unknown';
         const capital = country.capital?.[0] || 'Not available';
@@ -397,7 +499,7 @@ function showError(title, message) {
 // Details View
 function showCountryDetails(country) {
     // Populate Data
-    const flagUrl = country.flags?.svg || country.flags?.png || '';
+    const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
     const name = country.name?.common || 'Unknown';
     const officialName = country.name?.official || 'Unknown';
     
@@ -635,9 +737,6 @@ function showToast(message) {
     }, 3000);
 }
 
-// Run App
-document.addEventListener('DOMContentLoaded', init);
-
 // Compare Features & Helpers
 function populateCompareSelects() {
     // Sort all countries alphabetically
@@ -666,7 +765,7 @@ function renderCompareResults() {
     
     const renderCard = (country) => `
         <div class="compare-card">
-            <img src="${country.flags?.svg || country.flags?.png}" alt="Flag of ${country.name.common}">
+            <img src="${country.flags?.svg || country.flags?.png || FALLBACK_FLAG}" alt="Flag of ${country.name.common}">
             <h3>${country.name.common}</h3>
             <div class="compare-stat">
                 <span>Region</span>

@@ -1,5 +1,4 @@
 const API_ALL = './countries.json';
-const API_KEY = 'rc_live_7e8a57f97646446ab84a5f48ec408fa6';
 const CACHE_KEY = 'globeguide_countries_cache';
 const CACHE_TIME = 30 * 60 * 1000; // 30 minutes
 const FAV_KEY = 'globeguide_favorites';

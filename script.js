@@ -1,6 +1,8 @@
-const API_ALL = 'https://restcountries.com/v3.1/all';
-const API_KEY = 'rc_live_7e8a57f97646446ab84a5f48ec408fa6';
-const CACHE_KEY = 'globeguide_countries_cache';
+const API_BASE = 'https://api.restcountries.com/countries/v5';
+const API_FIELDS = 'names.common,names.official,codes.alpha_2,codes.alpha_3,flag.url_svg,flag.url_png,capitals,region,subregion,area,population,languages,currencies,timezones,cars,classification.un_member';
+const API_PAGE_SIZE = 100; // Free plan max
+const API_KEY = (typeof REST_COUNTRIES_API_KEY !== 'undefined') ? REST_COUNTRIES_API_KEY : '';
+const CACHE_KEY = 'globeguide_countries_cache_v5';
 const CACHE_TIME = 30 * 60 * 1000; // 30 minutes
 const FAV_KEY = 'globeguide_favorites';
 
@@ -55,7 +57,7 @@ async function init() {
         updateStats();
         applyFiltersAndSort();
     } catch (error) {
-        showError('Unable to load countries data.', 'Please check your connection and try again.');
+        showError('Unable to load countries data.', error.message || 'Please check your connection and try again.');
     }
 }
 
@@ -77,13 +79,38 @@ async function fetchCountries() {
         }
     }
 
-    // Fetch from API
+    if (!API_KEY) {
+        throw new Error('Missing API key. Add REST_COUNTRIES_API_KEY to config.js (https://restcountries.com/sign-up).');
+    }
+
+    // Fetch from API (paginated - the v5 free plan caps responses at 100 records)
     try {
-        const response = await fetch(API_ALL);
-        if (!response.ok) throw new Error('API Response not OK');
-        
-        allCountries = await response.json();
-        
+        const all = [];
+        let offset = 0;
+
+        while (true) {
+            const url = `${API_BASE}?limit=${API_PAGE_SIZE}&offset=${offset}&response_fields=${API_FIELDS}`;
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${API_KEY}` }
+            });
+            if (!response.ok) throw new Error('API Response not OK');
+
+            const json = await response.json();
+            if (json.errors && json.errors.length) throw new Error(json.errors[0].message);
+
+            const objects = json.data?.objects || [];
+            objects.forEach(c => all.push(mapCountry(c)));
+
+            const meta = json.data?.meta || {};
+            offset += API_PAGE_SIZE;
+
+            // Stop when the API says there are no more records
+            if (meta.more === false || !objects.length) break;
+            if (all.length >= (meta.total || Infinity)) break;
+        }
+
+        allCountries = all;
+
         // Save to cache
         localStorage.setItem(CACHE_KEY, JSON.stringify({
             timestamp: Date.now(),
@@ -93,6 +120,43 @@ async function fetchCountries() {
         console.error('Fetch error:', error);
         throw error;
     }
+}
+
+// Normalize a v5 API record into the legacy v3.x shape used by the UI
+function mapCountry(c) {
+    const languages = {};
+    (c.languages || []).forEach(l => {
+        const code = l.iso639_1 || l.iso639_3 || '';
+        if (code) languages[code] = l.name;
+    });
+
+    const currencies = {};
+    (c.currencies || []).forEach(cur => {
+        if (cur.code) currencies[cur.code] = { name: cur.name, symbol: cur.symbol };
+    });
+
+    return {
+        name: {
+            common: c.names?.common || 'Unknown',
+            official: c.names?.official || 'Unknown'
+        },
+        cca3: c.codes?.alpha_3 || c.codes?.alpha_2 || c.names?.common || '',
+        cca2: c.codes?.alpha_2 || '',
+        flags: {
+            svg: c.flag?.url_svg || '',
+            png: c.flag?.url_png || ''
+        },
+        capital: (c.capitals || []).map(cap => cap.name),
+        region: c.region || '',
+        subregion: c.subregion || '',
+        area: c.area?.kilometers,
+        population: c.population || 0,
+        languages,
+        currencies,
+        timezones: c.timezones || [],
+        car: { side: c.cars?.driving_side || '' },
+        unMember: c.classification?.un_member === true
+    };
 }
 
 // Event Listeners Setup

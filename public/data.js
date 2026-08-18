@@ -1,0 +1,9 @@
+const COUNTRIES_DATA = {
+    "success": false,
+    "data": null,
+    "errors": [
+        {
+            "message": "This API version has been deprecated. Please visit https://restcountries.com/docs/countries/legacy-api-deprecation to migrate to our new version (v5)."
+        }
+    ]
+};

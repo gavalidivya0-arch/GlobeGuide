@@ -30,6 +30,7 @@ const elements = {
     resetFiltersBtn: document.getElementById('resetFiltersBtn'),
     
     // Nav
+    navLogo: document.getElementById('navLogo'),
     navExplore: document.getElementById('navExplore'),
     navCompare: document.getElementById('navCompare'),
     navFavorites: document.getElementById('navFavorites'),
@@ -266,6 +267,13 @@ function setupEventListeners() {
     });
 
     // Navigation
+    elements.navLogo.addEventListener('click', (e) => {
+        e.preventDefault();
+        elements.resetFiltersBtn.click();
+        elements.navExplore.click();
+        window.scrollTo(0, 0);
+    });
+
     elements.navExplore.addEventListener('click', () => {
         showOnlyFavorites = false;
         elements.navExplore.classList.add('active');

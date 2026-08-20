@@ -1,12 +1,82 @@
+// GlobeGuide Application Logic & Country Explorer
+
 const API_BASE = 'https://api.restcountries.com/countries/v5';
 const API_FIELDS = 'names.common,names.official,codes.alpha_2,codes.alpha_3,flag.url_svg,flag.url_png,capitals,region,subregion,area,population,languages,currencies,timezones,cars,classification.un_member,links.google_maps,calling_codes,borders';
-const API_PAGE_SIZE = 100; // Free plan max
+const API_PAGE_SIZE = 100;
 const API_KEY = (typeof REST_COUNTRIES_API_KEY !== 'undefined') ? REST_COUNTRIES_API_KEY : '';
 const CACHE_KEY = 'globeguide_countries_cache_v5';
 const CACHE_TIME = 30 * 60 * 1000; // 30 minutes
 const FAV_KEY = 'globeguide_favorites';
 const FALLBACK_FLAG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='213'><rect width='100%25' height='100%25' fill='%23e2e8f0'/><text x='50%25' y='55%25' font-size='72' text-anchor='middle' dominant-baseline='middle'>%F0%9F%8C%8D</text></svg>";
 
+// Approximate / Standard Geographic Center Coordinates [lat, lng] for accurate Leaflet maps & World Locator
+const COUNTRY_COORDINATES = {
+    "AFG": [33.9391, 67.7100], "ALB": [41.1533, 20.1683], "DZA": [28.0339, 1.6596], "ASM": [-14.2710, -170.1322],
+    "AND": [42.5063, 1.5218], "AGO": [-11.2027, 17.8739], "AIA": [18.2206, -63.0686], "ATA": [-75.2509, -0.0714],
+    "ATG": [17.0608, -61.7964], "ARG": [-38.4161, -63.6167], "ARM": [40.0691, 45.0382], "ABW": [12.5211, -69.9683],
+    "AUS": [-25.2744, 133.7751], "AUT": [47.5162, 14.5501], "AZE": [40.1431, 47.5769], "BHS": [25.0343, -77.3963],
+    "BHR": [26.0667, 50.5577], "BGD": [23.6850, 90.3563], "BRB": [13.1939, -59.5432], "BLR": [53.7098, 27.9534],
+    "BEL": [50.5039, 4.4699], "BLZ": [17.1899, -88.4976], "BEN": [9.3077, 2.3158], "BMU": [32.3078, -64.7505],
+    "BTN": [27.5142, 90.4336], "BOL": [-16.2902, -63.5887], "BIH": [43.9159, 17.6791], "BWA": [-22.3285, 24.6849],
+    "BVT": [-54.4232, 3.4132], "BRA": [-14.2350, -51.9253], "IOT": [-6.3432, 71.8765], "VGB": [18.4207, -64.6400],
+    "BRN": [4.5353, 114.7277], "BGR": [42.7339, 25.4858], "BFA": [12.2383, -1.5616], "BDI": [-3.3731, 29.9189],
+    "CPV": [16.0022, -24.0132], "KHM": [12.5657, 104.9910], "CMR": [7.3697, 12.3547], "CAN": [56.1304, -106.3468],
+    "BES": [12.1784, -68.2385], "CYM": [19.3133, -81.2546], "CAF": [6.6111, 20.9394], "TCD": [15.4542, 18.7322],
+    "CHL": [-35.6751, -71.5430], "CHN": [35.8617, 104.1954], "CXR": [-10.4475, 105.6904], "CCK": [-12.1642, 96.8710],
+    "COL": [4.5709, -74.2973], "COM": [-11.8750, 43.8722], "COG": [-0.2280, 15.8277], "COK": [-21.2367, -159.7777],
+    "CRI": [9.7489, -83.7534], "HRV": [45.1000, 15.2000], "CUB": [21.5218, -77.7812], "CUW": [12.1696, -68.9900],
+    "CYP": [35.1264, 33.4299], "CZE": [49.8175, 15.4730], "COD": [-4.0383, 21.7587], "DNK": [56.2639, 9.5018],
+    "DJI": [11.8251, 42.5903], "DMA": [15.4150, -61.3710], "DOM": [18.7357, -70.1627], "ECU": [-1.8312, -78.1834],
+    "EGY": [26.8206, 30.8025], "SLV": [13.7942, -88.8965], "GNQ": [1.6508, 10.2679], "ERI": [15.1794, 39.7823],
+    "EST": [58.5953, 25.0136], "SWZ": [-26.5225, 31.4659], "ETH": [9.1450, 40.4897], "FLK": [-51.7963, -59.5236],
+    "FRO": [61.8926, -6.9118], "FJI": [-17.7134, 178.0650], "FIN": [64.9631, 25.7482], "FRA": [46.2276, 2.2137],
+    "GUF": [3.9339, -53.1258], "PYF": [-17.6797, -149.4068], "ATF": [-49.2804, 69.3486], "GAB": [-0.8037, 11.6094],
+    "GMB": [13.4432, -15.3101], "GEO": [42.3154, 43.3569], "DEU": [51.1657, 10.4515], "GHA": [7.9465, -1.0232],
+    "GIB": [36.1408, -5.3536], "GRC": [39.0742, 21.8243], "GRL": [71.7069, -42.6043], "GRD": [12.1165, -61.6790],
+    "GLP": [16.2650, -61.5510], "GUM": [13.4443, 144.7937], "GTM": [15.7835, -90.2308], "GGY": [49.4482, -2.5895],
+    "GIN": [9.9456, -9.6966], "GNB": [11.8037, -15.1804], "GUY": [4.8604, -58.9302], "HTI": [18.9712, -72.2852],
+    "HMD": [-53.0818, 73.5042], "VAT": [41.9029, 12.4534], "HND": [15.2000, -86.2419], "HKG": [22.3193, 114.1694],
+    "HUN": [47.1625, 19.5033], "ISL": [64.9631, -19.0208], "IND": [20.5937, 78.9629], "IDN": [-0.7893, 113.9213],
+    "IRN": [32.4279, 53.6880], "IRQ": [33.2232, 43.6793], "IRL": [53.4129, -8.2439], "IMN": [54.2361, -4.5481],
+    "ISR": [31.0461, 34.8516], "ITA": [41.8719, 12.5674], "CIV": [7.5400, -5.5471], "JAM": [18.1096, -77.2975],
+    "JPN": [36.2048, 138.2529], "JEY": [49.2144, -2.1312], "JOR": [30.5852, 36.2384], "KAZ": [48.0196, 66.9237],
+    "KEN": [-0.0236, 37.9062], "KIR": [-3.3704, -168.7340], "PRK": [40.3399, 127.5101], "KOR": [35.9078, 127.7669],
+    "UNK": [42.6026, 20.9030], "KWT": [29.3117, 47.4818], "KGZ": [41.2044, 74.7661], "LAO": [19.8563, 102.4955],
+    "LVA": [56.8796, 24.6032], "LBN": [33.8547, 35.8623], "LSO": [-29.6099, 28.2336], "LBR": [6.4281, -9.4295],
+    "LBY": [26.3351, 17.2283], "LIE": [47.1660, 9.5554], "LTU": [55.1694, 23.8813], "LUX": [49.8153, 6.1296],
+    "MAC": [22.1987, 113.5439], "MDG": [-18.7669, 46.8691], "MWI": [-13.2543, 34.3015], "MYS": [4.2105, 101.9758],
+    "MDV": [3.2028, 73.2207], "MLI": [17.5707, -3.9962], "MLT": [35.9375, 14.3754], "MHL": [7.1315, 171.1845],
+    "MTQ": [14.6415, -61.0242], "MRT": [21.0079, -10.9408], "MUS": [-20.3484, 57.5522], "MYT": [-12.8275, 45.1662],
+    "MEX": [23.6345, -102.5528], "FSM": [7.4256, 150.5508], "MDA": [47.4116, 28.3699], "MCO": [43.7384, 7.4246],
+    "MNG": [46.8625, 103.8467], "MNE": [42.7087, 19.3744], "MSR": [16.7425, -62.1874], "MAR": [31.7917, -7.0926],
+    "MOZ": [-18.6657, 35.5296], "MMR": [21.9162, 95.9560], "NAM": [-22.9576, 18.4904], "NRU": [-0.5228, 166.9315],
+    "NPL": [28.3949, 84.1240], "NLD": [52.1326, 5.2913], "NCL": [-20.9043, 165.6180], "NZL": [-40.9006, 174.8860],
+    "NIC": [12.8654, -85.2072], "NER": [17.6078, 8.0817], "NGA": [9.0820, 8.6753], "NIU": [-19.0544, -169.8672],
+    "NFK": [-29.0408, 167.9547], "MKD": [41.6086, 21.7453], "MNP": [15.0979, 145.6739], "NOR": [60.4720, 8.4689],
+    "OMN": [21.5126, 55.9233], "PAK": [30.3753, 69.3451], "PLW": [7.5150, 134.5825], "PSE": [31.9522, 35.2332],
+    "PAN": [8.5379, -80.7821], "PNG": [-6.3150, 143.9555], "PRY": [-23.4425, -58.4438], "PER": [-9.1900, -75.0152],
+    "PHL": [12.8797, 121.7740], "PCN": [-24.7036, -127.4393], "POL": [51.9194, 19.1451], "PRT": [39.3999, -8.2245],
+    "PRI": [18.2208, -66.5901], "QAT": [25.3548, 51.1839], "REU": [-21.1151, 55.5364], "ROU": [45.9432, 24.9668],
+    "RUS": [61.5240, 105.3188], "RWA": [-1.9403, 29.8739], "BLM": [17.9000, -62.8333], "SHN": [-24.1435, -10.0307],
+    "KNA": [17.3578, -62.7830], "LCA": [13.9094, -60.9789], "MAF": [18.0708, -63.0501], "SPM": [46.8852, -56.3159],
+    "VCT": [12.9843, -61.2872], "WSM": [-13.7590, -172.1046], "SMR": [43.9424, 12.4578], "STP": [0.1864, 6.6131],
+    "SAU": [23.8859, 45.0792], "SEN": [14.4974, -14.4524], "SRB": [44.0165, 21.0059], "SYC": [-4.6796, 55.4920],
+    "SLE": [8.4606, -11.7799], "SGP": [1.3521, 103.8198], "SXM": [18.0425, -63.0548], "SVK": [48.6690, 19.6990],
+    "SVN": [46.1512, 14.9955], "SLB": [-9.6457, 160.1562], "SOM": [5.1521, 46.1996], "ZAF": [-30.5595, 22.9375],
+    "SGS": [-54.4296, -36.5879], "SSD": [6.8770, 31.3070], "ESP": [40.4637, -3.7492], "LKA": [7.8731, 80.7718],
+    "SDN": [12.8628, 30.2176], "SUR": [3.9193, -56.0278], "SJM": [77.5536, 23.6703], "SWE": [60.1282, 18.6435],
+    "CHE": [46.8182, 8.2275], "SYR": [34.8021, 38.9968], "TWN": [23.6978, 120.9605], "TJK": [38.8610, 71.2761],
+    "TZA": [-6.3690, 34.8888], "THA": [15.8700, 100.9925], "TLS": [-8.8742, 125.7275], "TGO": [8.6195, 0.8248],
+    "TKL": [-8.9674, -171.8559], "TON": [-21.1790, -175.1982], "TTO": [10.6918, -61.2225], "TUN": [33.8869, 9.5375],
+    "TUR": [38.9637, 35.2433], "TKM": [38.9697, 59.5563], "TCA": [21.6940, -71.7979], "TUV": [-7.1095, 177.6493],
+    "UGA": [1.3733, 32.2903], "UKR": [48.3794, 31.1656], "ARE": [23.4241, 53.8478], "GBR": [55.3781, -3.4360],
+    "USA": [37.0902, -95.7129], "UMI": [19.2823, 166.6470], "URY": [-32.5228, -55.7658], "UZB": [41.3775, 64.5853],
+    "VUT": [-15.3767, 166.9592], "VEN": [6.4238, -66.5897], "VNM": [14.0583, 108.2772], "VIR": [18.3358, -64.8963],
+    "WLF": [-13.7687, -177.1561], "ESH": [24.2155, -12.8858], "YEM": [15.5527, 48.5164], "ZMB": [-13.1339, 27.8493],
+    "ZWE": [-19.0154, 29.1549], "Abkhazia": [43.0016, 41.0234]
+};
+
+// Application State
 let allCountries = [];
 let displayedCountries = [];
 let favorites = new Set();
@@ -14,37 +84,55 @@ let currentRegion = 'All';
 let currentSearch = '';
 let currentSort = 'name-asc';
 let showOnlyFavorites = false;
+let currentView = 'home'; // 'home', 'explore', 'favorites', 'compare', 'country'
+let activeCountryCode = null;
+let leafletMapInstance = null;
 
 // DOM Elements
 const elements = {
+    mainExplorerView: document.getElementById('mainExplorerView'),
+    heroSection: document.getElementById('heroSection'),
+    heroTitle: document.getElementById('heroTitle'),
+    heroSubtitle: document.getElementById('heroSubtitle'),
+    statsRow: document.getElementById('statsRow'),
+    explorerSection: document.getElementById('explorerSection'),
     grid: document.getElementById('countriesGrid'),
     searchInput: document.getElementById('searchInput'),
     clearSearchBtn: document.getElementById('clearSearch'),
     regionFilters: document.getElementById('regionFilters'),
     sortSelect: document.getElementById('sortSelect'),
     randomBtn: document.getElementById('randomCountryBtn'),
-    statsRow: document.getElementById('statsRow'),
     messageContainer: document.getElementById('messageContainer'),
     messageTitle: document.getElementById('messageTitle'),
     messageBody: document.getElementById('messageBody'),
     resetFiltersBtn: document.getElementById('resetFiltersBtn'),
     
-    // Nav
+    // Compare
+    compareSection: document.getElementById('compareSection'),
+    compareSelect1: document.getElementById('compareSelect1'),
+    compareSelect2: document.getElementById('compareSelect2'),
+    compareResults: document.getElementById('compareResults'),
+
+    // Details Section
+    countryDetailsSection: document.getElementById('countryDetailsSection'),
+    
+    // Navigation
     navLogo: document.getElementById('navLogo'),
     navHome: document.getElementById('navHome'),
     navExplore: document.getElementById('navExplore'),
+    navCompare: document.getElementById('navCompare'),
     navFavorites: document.getElementById('navFavorites'),
+    themeToggle: document.getElementById('themeToggle'),
     explorerHeading: document.getElementById('explorerHeading'),
     explorerSubheading: document.getElementById('explorerSubheading'),
     
-    // Modal
-    modal: document.getElementById('detailsModal'),
-    modalBackdrop: document.getElementById('modalBackdrop'),
-    modalBody: document.getElementById('modalBody'),
-    closeModalBtn: document.getElementById('closeModalBtn'),
-    modalFavBtn: document.getElementById('modalFavBtn'),
+    // Stats elements
+    statCountries: document.getElementById('statCountries'),
+    statRegions: document.getElementById('statRegions'),
+    statLanguages: document.getElementById('statLanguages'),
+    statCurrencies: document.getElementById('statCurrencies'),
     
-    // Footer
+    // Footer & Toast
     currentYear: document.getElementById('currentYear'),
     toast: document.getElementById('toast')
 };
@@ -58,17 +146,17 @@ async function init() {
     try {
         await fetchCountries();
         updateStats();
-        applyFiltersAndSort();
+        handleRoute();
     } catch (error) {
         showError('Unable to load countries data.', error.message || 'Please check your connection and try again.');
     }
 }
 
-// Data Fetching and Caching
+// Data Fetching
 async function fetchCountries() {
     showLoading();
-    
-    // Check Cache
+
+    // 1. Check Cache
     const cachedData = localStorage.getItem(CACHE_KEY);
     if (cachedData) {
         try {
@@ -82,13 +170,12 @@ async function fetchCountries() {
         }
     }
 
-    // 2. Load the bundled snapshot (data.js) - always works
+    // 2. Load the bundled snapshot (data.js)
     if (typeof COUNTRIES_DATA !== 'undefined' && Array.isArray(COUNTRIES_DATA)) {
         allCountries = COUNTRIES_DATA;
     }
 
-    // 3. Best-effort live refresh from the v5 API (works once the browser
-    //    origin is added to the key's CORS allowlist in the REST Countries dashboard)
+    // 3. Live refresh from v5 API if API Key is configured
     if (API_KEY) {
         try {
             const fresh = await fetchAllCountries();
@@ -100,18 +187,18 @@ async function fetchCountries() {
                 }));
             }
         } catch (e) {
-            console.warn('Live API refresh failed; using bundled data.', e.message);
+            console.warn('Live API refresh failed; using snapshot data.', e.message);
         }
     }
 
     if (!allCountries.length) {
-        throw new Error('No country data available. Check that data.js is present and your config.js API key is valid.');
+        throw new Error('No country data available. Ensure data.js or config.js is loaded.');
     }
 }
 
-// Paginated fetch + normalization of the REST Countries v5 response
+// REST Countries v5 paginated fetch helper
 async function fetchAllCountries() {
-    if (!API_KEY) throw new Error('Missing API key in config.js');
+    if (!API_KEY) throw new Error('Missing API key');
     const all = [];
     let offset = 0;
 
@@ -137,7 +224,7 @@ async function fetchAllCountries() {
     return all;
 }
 
-// Normalize a v5 API record into the legacy v3.x shape used by the UI
+// Normalize v5 API response to application schema
 function mapCountry(c) {
     const languages = {};
     (c.languages || []).forEach(l => {
@@ -179,8 +266,615 @@ function mapCountry(c) {
     };
 }
 
-// Event Listeners Setup
+// Routing System (Hash-based SPA Router)
+function handleRoute() {
+    const hash = window.location.hash || '#/home';
+
+    if (hash.startsWith('#/country/')) {
+        const code = decodeURIComponent(hash.replace('#/country/', '')).trim();
+        showCountryDetailsPage(code);
+    } else if (hash === '#/explore') {
+        showExploreView();
+    } else if (hash === '#/favorites') {
+        showFavoritesView();
+    } else if (hash === '#/compare') {
+        showCompareView();
+    } else {
+        showHomeView();
+    }
+}
+
+function updateNavActive(activeId) {
+    [elements.navHome, elements.navExplore, elements.navCompare, elements.navFavorites].forEach(btn => {
+        if (btn) btn.classList.remove('active');
+    });
+    const activeBtn = document.getElementById(activeId);
+    if (activeBtn) activeBtn.classList.add('active');
+}
+
+function showHomeView() {
+    currentView = 'home';
+    showOnlyFavorites = false;
+    updateNavActive('navHome');
+
+    elements.countryDetailsSection.classList.add('hidden');
+    elements.mainExplorerView.classList.remove('hidden');
+    elements.heroSection.classList.remove('hidden');
+    elements.statsRow.classList.remove('hidden');
+    elements.explorerSection.classList.remove('hidden');
+    elements.grid.classList.remove('hidden');
+    elements.compareSection.classList.add('hidden');
+
+    elements.heroTitle.textContent = 'Explore the World, One Country at a Time';
+    elements.heroSubtitle.textContent = 'Discover countries, cultures, populations, languages, currencies, and more through an interactive global explorer.';
+    elements.explorerHeading.textContent = 'Welcome to GlobeGuide';
+    elements.explorerSubheading.textContent = 'Browse and discover countries from around the world.';
+
+    applyFiltersAndSort();
+}
+
+function showExploreView() {
+    currentView = 'explore';
+    showOnlyFavorites = false;
+    updateNavActive('navExplore');
+
+    elements.countryDetailsSection.classList.add('hidden');
+    elements.mainExplorerView.classList.remove('hidden');
+    elements.heroSection.classList.remove('hidden');
+    elements.statsRow.classList.remove('hidden');
+    elements.explorerSection.classList.remove('hidden');
+    elements.grid.classList.remove('hidden');
+    elements.compareSection.classList.add('hidden');
+
+    elements.heroTitle.textContent = 'Global Country Explorer';
+    elements.heroSubtitle.textContent = 'Search by name or capital, filter by region, and explore deep demographic and geographic statistics.';
+    elements.explorerHeading.textContent = 'Explore Countries';
+    elements.explorerSubheading.textContent = 'Showing comprehensive dataset of nations and territories.';
+
+    applyFiltersAndSort();
+}
+
+function showFavoritesView() {
+    currentView = 'favorites';
+    showOnlyFavorites = true;
+    updateNavActive('navFavorites');
+
+    elements.countryDetailsSection.classList.add('hidden');
+    elements.mainExplorerView.classList.remove('hidden');
+    elements.heroSection.classList.remove('hidden');
+    elements.statsRow.classList.remove('hidden');
+    elements.explorerSection.classList.remove('hidden');
+    elements.grid.classList.remove('hidden');
+    elements.compareSection.classList.add('hidden');
+
+    elements.heroTitle.textContent = 'Your Saved Favorites';
+    elements.heroSubtitle.textContent = 'Quickly access countries and territories you have saved.';
+    elements.explorerHeading.textContent = 'Favorite Countries';
+    elements.explorerSubheading.textContent = `${favorites.size} countries saved in your personal collection.`;
+
+    applyFiltersAndSort();
+}
+
+function showCompareView() {
+    currentView = 'compare';
+    updateNavActive('navCompare');
+
+    elements.countryDetailsSection.classList.add('hidden');
+    elements.mainExplorerView.classList.remove('hidden');
+    elements.heroSection.classList.add('hidden');
+    elements.statsRow.classList.add('hidden');
+    elements.explorerSection.classList.remove('hidden');
+    elements.grid.classList.add('hidden');
+    elements.messageContainer.classList.add('hidden');
+    elements.compareSection.classList.remove('hidden');
+
+    elements.explorerHeading.textContent = 'Compare Countries Side-by-Side';
+    elements.explorerSubheading.textContent = 'Select two nations to compare population, area, languages, and more.';
+    populateCompareSelects();
+}
+
+// Country Details Page Navigation
+function navigateToCountry(cca3) {
+    if (!cca3) return;
+    window.location.hash = `#/country/${encodeURIComponent(cca3)}`;
+}
+
+function showCountryDetailsPage(countryCode) {
+    if (!allCountries.length) return;
+
+    const country = allCountries.find(c => 
+        (c.cca3 && c.cca3.toLowerCase() === countryCode.toLowerCase()) || 
+        (c.cca2 && c.cca2.toLowerCase() === countryCode.toLowerCase()) ||
+        (c.name?.common && c.name.common.toLowerCase() === countryCode.toLowerCase())
+    );
+
+    if (!country) {
+        showError('Country Not Found', `No information available for country code "${countryCode}".`);
+        elements.mainExplorerView.classList.remove('hidden');
+        elements.countryDetailsSection.classList.add('hidden');
+        return;
+    }
+
+    currentView = 'country';
+    activeCountryCode = country.cca3;
+
+    // Switch view containers
+    elements.mainExplorerView.classList.add('hidden');
+    elements.countryDetailsSection.classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    renderCountryDetails(country);
+}
+
+// Render Dedicated Country Details Page
+function renderCountryDetails(country) {
+    const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
+    const name = country.name?.common || 'Unknown';
+    const officialName = country.name?.official || 'Unknown';
+    const capital = (country.capital && country.capital.length) ? country.capital.join(', ') : 'Not available';
+    const region = country.region || 'Not available';
+    const subregion = country.subregion || 'Not available';
+    const isFav = favorites.has(country.cca3);
+    const popFormatted = formatPopulation(country.population);
+    const popExact = country.population ? new Intl.NumberFormat().format(country.population) : '0';
+    const areaFormatted = country.area ? new Intl.NumberFormat().format(country.area) + ' km²' : 'Not available';
+    const areaSqMi = country.area ? new Intl.NumberFormat().format(Math.round(country.area * 0.386102)) + ' sq mi' : '';
+    const languagesStr = getLanguages(country.languages);
+    const currenciesStr = getCurrencies(country.currencies);
+    const timezonesList = country.timezones && country.timezones.length ? country.timezones : ['Not available'];
+    const drivingSide = (country.car?.side || 'right').toLowerCase();
+    const drivingSideCap = drivingSide.charAt(0).toUpperCase() + drivingSide.slice(1);
+    const unMemberStatus = country.unMember ? 'UN Member State' : 'Non-UN Territory';
+    const dialCode = (country.idd?.root || '') + (country.idd?.suffixes?.[0] || '');
+    const googleMapUrl = country.maps?.googleMaps || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
+    const osmUrl = `https://www.openstreetmap.org/search?query=${encodeURIComponent(name)}`;
+
+    // Coordinates lookup
+    const coords = COUNTRY_COORDINATES[country.cca3] || [20, 0];
+    const lat = coords[0];
+    const lng = coords[1];
+    const latFormatted = `${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? 'N' : 'S'}`;
+    const lngFormatted = `${Math.abs(lng).toFixed(2)}° ${lng >= 0 ? 'E' : 'W'}`;
+    const hemisphere = `${lat >= 0 ? 'Northern' : 'Southern'} / ${lng >= 0 ? 'Eastern' : 'Western'} Hemisphere`;
+
+    // SVG World Locator Marker Position (% based on Equirectangular projection)
+    const pinX = Math.max(2, Math.min(98, ((lng + 180) / 360) * 100));
+    const pinY = Math.max(5, Math.min(95, ((90 - lat) / 180) * 100));
+
+    // Borders HTML
+    let bordersHtml = '<p class="no-borders-msg">🏝️ This country does not share land borders with any other nation (Island or territory).</p>';
+    if (country.borders && country.borders.length > 0) {
+        const borderChips = country.borders.map(bCode => {
+            const borderCountry = allCountries.find(c => c.cca3 === bCode || c.cca2 === bCode);
+            const bName = borderCountry ? borderCountry.name.common : bCode;
+            const bFlag = borderCountry ? (borderCountry.flags?.svg || borderCountry.flags?.png || FALLBACK_FLAG) : FALLBACK_FLAG;
+            return `
+                <button class="border-country-chip" onclick="navigateToCountry('${bCode}')" title="View details for ${bName}">
+                    <img src="${bFlag}" alt="Flag of ${bName}" class="border-country-flag" loading="lazy">
+                    <div>
+                        <div class="border-country-name">${bName}</div>
+                        <div class="border-country-code">${bCode}</div>
+                    </div>
+                </button>
+            `;
+        }).join('');
+        bordersHtml = `<div class="borders-grid">${borderChips}</div>`;
+    }
+
+    // Languages tags
+    let langTagsHtml = '';
+    if (country.languages && Object.keys(country.languages).length > 0) {
+        langTagsHtml = Object.values(country.languages).map(l => `<span class="sub-tag">${l}</span>`).join('');
+    } else {
+        langTagsHtml = '<span class="sub-tag">Not available</span>';
+    }
+
+    // Timezones tags
+    const timezonesTagsHtml = timezonesList.map(tz => `<span class="sub-tag">${tz}</span>`).join('');
+
+    // Currencies tags
+    let currTagsHtml = '';
+    if (country.currencies && Object.keys(country.currencies).length > 0) {
+        currTagsHtml = Object.entries(country.currencies).map(([code, cur]) => {
+            return `<span class="sub-tag">${cur.name || code} (${cur.symbol || code})</span>`;
+        }).join('');
+    } else {
+        currTagsHtml = '<span class="sub-tag">Not available</span>';
+    }
+
+    // Build the Complete Country Details Page HTML
+    const detailsHtml = `
+        <!-- Top Navigation & Action Bar -->
+        <div class="details-nav-bar">
+            <button class="btn-back-details" id="backToExploreBtn" aria-label="Back to Explore">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Back to Explore
+            </button>
+            <div class="details-top-actions">
+                <button class="action-pill-btn ${isFav ? 'active' : ''}" id="detailsFavToggleBtn" data-code="${country.cca3}" data-name="${name}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <span>${isFav ? 'Saved to Favorites' : 'Add to Favorites'}</span>
+                </button>
+                <button class="action-pill-btn" id="detailsShareBtn" title="Copy shareable link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    <span>Copy Link</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Hero Showcase Card -->
+        <div class="details-hero-card">
+            <div class="details-flag-box">
+                <img src="${flagUrl}" alt="Flag of ${name}" class="details-flag-img">
+                <span class="flag-code-tag">${country.cca3 || country.cca2}</span>
+            </div>
+            <div class="details-hero-text">
+                <h1>${name}</h1>
+                <p class="details-official-name">${officialName}</p>
+                <div class="details-badges-row">
+                    <span class="country-badge badge-primary">🌍 ${region}</span>
+                    ${subregion ? `<span class="country-badge">📍 ${subregion}</span>` : ''}
+                    <span class="country-badge ${country.unMember ? 'badge-success' : ''}">🇺🇳 ${unMemberStatus}</span>
+                    <span class="country-badge">🚗 Drive on ${drivingSideCap}</span>
+                    ${dialCode ? `<span class="country-badge">📞 ${dialCode}</span>` : ''}
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics Summary Grid -->
+        <div class="details-metrics-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-icon">👥</span>
+                    <span>Population</span>
+                </div>
+                <div class="metric-value">${popFormatted}</div>
+                <div class="metric-subtext">${popExact} people</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-icon">📐</span>
+                    <span>Total Area</span>
+                </div>
+                <div class="metric-value">${country.area ? Intl.NumberFormat().format(country.area) + ' km²' : 'N/A'}</div>
+                <div class="metric-subtext">${areaSqMi || 'Geographic land'}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-icon">🏛️</span>
+                    <span>Capital</span>
+                </div>
+                <div class="metric-value" style="font-size: 1.1rem;">${country.capital?.[0] || 'None'}</div>
+                <div class="metric-subtext">Seat of government</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-icon">🗣️</span>
+                    <span>Languages</span>
+                </div>
+                <div class="metric-value" style="font-size: 1.05rem;" title="${languagesStr}">${languagesStr.substring(0, 20)}${languagesStr.length > 20 ? '...' : ''}</div>
+                <div class="metric-subtext">Official & spoken</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-icon">💰</span>
+                    <span>Currency</span>
+                </div>
+                <div class="metric-value" style="font-size: 1.05rem;" title="${currenciesStr}">${currenciesStr.substring(0, 20)}${currenciesStr.length > 20 ? '...' : ''}</div>
+                <div class="metric-subtext">Legal tender</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-icon">🧭</span>
+                    <span>Driving Side</span>
+                </div>
+                <div class="metric-value">${drivingSideCap}</div>
+                <div class="metric-subtext">Traffic system</div>
+            </div>
+        </div>
+
+        <!-- Columns Grid Layout -->
+        <div class="details-columns-layout">
+            <!-- Left Column: Detailed Information Tables -->
+            <div>
+                <!-- Geography & Location Card -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <svg class="info-card-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                        <h3>Geography & Location</h3>
+                    </div>
+                    <div class="info-table">
+                        <div class="info-table-row">
+                            <span class="info-table-label">Capital City</span>
+                            <span class="info-table-val">${capital}</span>
+                        </div>
+                        <div class="info-table-row">
+                            <span class="info-table-label">Continent / Region</span>
+                            <span class="info-table-val">${region}</span>
+                        </div>
+                        <div class="info-table-row">
+                            <span class="info-table-label">Subregion</span>
+                            <span class="info-table-val">${subregion}</span>
+                        </div>
+                        <div class="info-table-row">
+                            <span class="info-table-label">Surface Area</span>
+                            <span class="info-table-val">${areaFormatted} ${areaSqMi ? `(${areaSqMi})` : ''}</span>
+                        </div>
+                        <div class="info-table-row">
+                            <span class="info-table-label">Coordinates</span>
+                            <span class="info-table-val">${latFormatted}, ${lngFormatted}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Demographics & Society Card -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <svg class="info-card-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <h3>Demographics & Society</h3>
+                    </div>
+                    <div class="info-table">
+                        <div class="info-table-row">
+                            <span class="info-table-label">Population</span>
+                            <span class="info-table-val">${popExact}</span>
+                        </div>
+                        <div class="info-table-row">
+                            <span class="info-table-label">Spoken Languages</span>
+                            <div class="tag-badges-list">${langTagsHtml}</div>
+                        </div>
+                        <div class="info-table-row">
+                            <span class="info-table-label">UN Membership</span>
+                            <span class="info-table-val">${country.unMember ? '✅ Full UN Member' : '❌ Non-Member / Territory'}</span>
+                        </div>
+                        <div class="info-table-row">
+                            <span class="info-table-label">Calling Code</span>
+                            <span class="info-table-val">${dialCode || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Economy & Time Card -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <svg class="info-card-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                        <h3>Economy & Time Zones</h3>
+                    </div>
+                    <div class="info-table">
+                        <div class="info-table-row">
+                            <span class="info-table-label">Currencies</span>
+                            <div class="tag-badges-list">${currTagsHtml}</div>
+                        </div>
+                        <div class="info-table-row">
+                            <span class="info-table-label">Time Zones</span>
+                            <div class="tag-badges-list">${timezonesTagsHtml}</div>
+                        </div>
+                        <div class="info-table-row">
+                            <span class="info-table-label">Driving Traffic Side</span>
+                            <span class="info-table-val">${drivingSideCap} Hand Side</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Highlighted World Map Location & Interactive Leaflet Map -->
+            <div>
+                <!-- Highlighted World Map Location Card -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <svg class="info-card-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                        <h3>Highlighted World Map Location</h3>
+                    </div>
+                    
+                    <div class="world-locator-container">
+                        <!-- Stylized SVG World Map -->
+                        <svg class="world-map-svg" viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <pattern id="worldGrid" width="50" height="50" patternUnits="userSpaceOnUse">
+                                    <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(100, 116, 139, 0.12)" stroke-width="1"/>
+                                </pattern>
+                            </defs>
+                            <rect width="1000" height="500" fill="url(#worldGrid)" />
+                            
+                            <!-- Simplified Continent Outlines -->
+                            <g fill="rgba(100, 116, 139, 0.28)" stroke="rgba(100, 116, 139, 0.45)" stroke-width="1.5">
+                                <!-- North America -->
+                                <path d="M 120 70 Q 180 50 280 80 Q 320 120 280 180 Q 230 200 180 230 Q 150 170 120 120 Z"/>
+                                <!-- South America -->
+                                <path d="M 270 250 Q 350 260 380 340 Q 350 440 290 460 Q 260 380 260 300 Z"/>
+                                <!-- Europe -->
+                                <path d="M 460 70 Q 560 60 580 120 Q 530 160 480 160 Q 450 120 460 70 Z"/>
+                                <!-- Africa -->
+                                <path d="M 460 170 Q 560 170 580 250 Q 550 380 500 410 Q 440 330 450 220 Z"/>
+                                <!-- Asia -->
+                                <path d="M 580 70 Q 820 60 880 150 Q 840 270 720 270 Q 640 180 580 120 Z"/>
+                                <!-- Australia / Oceania -->
+                                <path d="M 760 320 Q 880 310 890 390 Q 820 440 760 390 Z"/>
+                                <!-- Greenland / Arctic -->
+                                <path d="M 330 30 Q 420 20 400 70 Q 330 80 330 30 Z"/>
+                            </g>
+                        </svg>
+
+                        <!-- Dynamic Coordinate Pin & Radar Pulse -->
+                        <div class="world-pin-point" style="left: ${pinX}%; top: ${pinY}%;">
+                            <div class="world-pin-pulse"></div>
+                            <div class="world-pin-beacon" title="${name} (${latFormatted}, ${lngFormatted})"></div>
+                        </div>
+                    </div>
+
+                    <div class="world-locator-meta">
+                        <span>${hemisphere}</span>
+                        <span class="coordinates-badge">${latFormatted}, ${lngFormatted}</span>
+                    </div>
+                </div>
+
+                <!-- Interactive Map Section -->
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <svg class="info-card-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+                        <h3>Interactive Map Exploration</h3>
+                    </div>
+                    
+                    <div class="interactive-map-wrapper">
+                        <div id="countryLeafletMap"></div>
+                    </div>
+
+                    <div class="map-action-links">
+                        <a href="${googleMapUrl}" target="_blank" rel="noopener noreferrer" class="map-external-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                            Open in Google Maps
+                        </a>
+                        <a href="${osmUrl}" target="_blank" rel="noopener noreferrer" class="map-external-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg>
+                            OpenStreetMap
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bordering Countries Section -->
+        <div class="borders-section-card">
+            <div class="info-card-header">
+                <svg class="info-card-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                <h3>Bordering Countries ${country.borders && country.borders.length ? `(${country.borders.length})` : ''}</h3>
+            </div>
+            ${bordersHtml}
+        </div>
+    `;
+
+    elements.countryDetailsSection.innerHTML = detailsHtml;
+
+    // Attach event listeners for details top bar buttons
+    const backBtn = document.getElementById('backToExploreBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.hash = '#/explore';
+            }
+        });
+    }
+
+    const favToggleBtn = document.getElementById('detailsFavToggleBtn');
+    if (favToggleBtn) {
+        favToggleBtn.addEventListener('click', (e) => {
+            toggleFavorite(country.cca3, name);
+            const currentlyFav = favorites.has(country.cca3);
+            favToggleBtn.classList.toggle('active', currentlyFav);
+            const span = favToggleBtn.querySelector('span');
+            const svg = favToggleBtn.querySelector('svg');
+            if (span) span.textContent = currentlyFav ? 'Saved to Favorites' : 'Add to Favorites';
+            if (svg) svg.setAttribute('fill', currentlyFav ? 'currentColor' : 'none');
+        });
+    }
+
+    const shareBtn = document.getElementById('detailsShareBtn');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', () => {
+            const url = window.location.href;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showToast(`Link for ${name} copied to clipboard!`);
+                }).catch(() => {
+                    showToast(`URL: ${url}`);
+                });
+            } else {
+                showToast(`URL: ${url}`);
+            }
+        });
+    }
+
+    // Initialize Leaflet Map
+    initLeafletMap(country, coords);
+}
+
+// Leaflet Map Initialization
+function initLeafletMap(country, coords) {
+    const mapElement = document.getElementById('countryLeafletMap');
+    if (!mapElement || typeof L === 'undefined') return;
+
+    // Destroy existing instance if any
+    if (leafletMapInstance) {
+        leafletMapInstance.remove();
+        leafletMapInstance = null;
+    }
+
+    const [lat, lng] = coords;
+    const name = country.name?.common || 'Country';
+    const capital = (country.capital && country.capital.length) ? country.capital[0] : name;
+    const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
+
+    // Calculate sensible zoom level based on country area
+    let zoomLevel = 5;
+    if (country.area) {
+        if (country.area > 5000000) zoomLevel = 3;
+        else if (country.area > 1000000) zoomLevel = 4;
+        else if (country.area > 200000) zoomLevel = 5;
+        else if (country.area > 30000) zoomLevel = 6;
+        else zoomLevel = 8;
+    }
+
+    try {
+        leafletMapInstance = L.map('countryLeafletMap', {
+            center: [lat, lng],
+            zoom: zoomLevel,
+            zoomControl: true,
+            scrollWheelZoom: false
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+        }).addTo(leafletMapInstance);
+
+        // Custom Marker
+        const customIcon = L.divIcon({
+            className: 'custom-map-pin',
+            html: `
+                <div style="
+                    background: #2563EB;
+                    border: 2px solid #FFFFFF;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+                    overflow: hidden;
+                ">
+                    <img src="${flagUrl}" style="width: 100%; height: 100%; object-fit: cover;" alt="${name}">
+                </div>
+            `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+        const marker = L.marker([lat, lng], { icon: customIcon }).addTo(leafletMapInstance);
+        marker.bindPopup(`
+            <div style="font-family: inherit; font-size: 0.9rem; text-align: center; padding: 4px;">
+                <strong style="font-size: 1rem; color: #0F172A; display: block; margin-bottom: 2px;">${name}</strong>
+                <span style="color: #64748B; font-size: 0.8rem;">Capital: ${capital}</span>
+            </div>
+        `).openPopup();
+
+        // Invalidate map size after DOM settles
+        setTimeout(() => {
+            if (leafletMapInstance) {
+                leafletMapInstance.invalidateSize();
+            }
+        }, 200);
+    } catch (e) {
+        console.warn('Leaflet initialization error:', e);
+    }
+}
+
+// Setup Event Listeners
 function setupEventListeners() {
+    // Hash Routing listener
+    window.addEventListener('hashchange', handleRoute);
+
     // Search with Debounce
     let searchTimeout;
     elements.searchInput.addEventListener('input', (e) => {
@@ -206,23 +900,15 @@ function setupEventListeners() {
         elements.searchInput.focus();
         applyFiltersAndSort();
     });
-    
-    // Keyboard shortcut / for search
-    document.addEventListener('keydown', (e) => {
-        if (e.key === '/' && document.activeElement !== elements.searchInput) {
-            e.preventDefault();
-            elements.searchInput.focus();
-        }
-    });
 
     // Region Filters
     elements.regionFilters.addEventListener('click', (e) => {
-        if (e.target.classList.contains('filter-pill')) {
-            // Update active styling
-            document.querySelectorAll('.filter-pill').forEach(pill => pill.classList.remove('active'));
-            e.target.classList.add('active');
+        const pill = e.target.closest('.filter-pill');
+        if (pill) {
+            document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
             
-            currentRegion = e.target.dataset.region;
+            currentRegion = pill.dataset.region;
             applyFiltersAndSort();
         }
     });
@@ -233,18 +919,17 @@ function setupEventListeners() {
         applyFiltersAndSort();
     });
 
-    // Random Button
+    // Random Country Button
     elements.randomBtn.addEventListener('click', () => {
-        if (displayedCountries.length > 0) {
-            const randomIndex = Math.floor(Math.random() * displayedCountries.length);
-            showCountryDetails(displayedCountries[randomIndex]);
-        } else if (allCountries.length > 0) {
-            const randomIndex = Math.floor(Math.random() * allCountries.length);
-            showCountryDetails(allCountries[randomIndex]);
+        const pool = displayedCountries.length > 0 ? displayedCountries : allCountries;
+        if (pool.length > 0) {
+            const randomIndex = Math.floor(Math.random() * pool.length);
+            const randomCountry = pool[randomIndex];
+            navigateToCountry(randomCountry.cca3);
         }
     });
 
-    // Reset Filters
+    // Reset Filters Button
     elements.resetFiltersBtn.addEventListener('click', () => {
         elements.searchInput.value = '';
         currentSearch = '';
@@ -261,72 +946,83 @@ function setupEventListeners() {
         applyFiltersAndSort();
     });
 
-    // Navigation
+    // Nav Links
     elements.navLogo.addEventListener('click', (e) => {
         e.preventDefault();
-        elements.resetFiltersBtn.click();
-        elements.navHome.click();
-        window.scrollTo(0, 0);
+        window.location.hash = '#/home';
     });
 
     elements.navHome.addEventListener('click', () => {
-        showOnlyFavorites = false;
-        elements.navHome.classList.add('active');
-        elements.navExplore.classList.remove('active');
-        elements.navFavorites.classList.remove('active');
-        elements.explorerHeading.textContent = 'Welcome to GlobeGuide';
-        elements.explorerSubheading.textContent = 'Discover countries, cultures, populations, languages, currencies, and more.';
-        applyFiltersAndSort();
+        window.location.hash = '#/home';
     });
 
     elements.navExplore.addEventListener('click', () => {
-        showOnlyFavorites = false;
-        elements.navExplore.classList.add('active');
-        elements.navHome.classList.remove('active');
-        elements.navFavorites.classList.remove('active');
-        elements.explorerHeading.textContent = 'Explore Countries';
-        elements.explorerSubheading.textContent = 'Browse and discover countries from around the world.';
-        applyFiltersAndSort();
+        window.location.hash = '#/explore';
     });
 
     elements.navFavorites.addEventListener('click', () => {
-        showOnlyFavorites = true;
-        elements.navFavorites.classList.add('active');
-        elements.navHome.classList.remove('active');
-        elements.navExplore.classList.remove('active');
-        elements.explorerHeading.textContent = 'Your Favorites';
-        elements.explorerSubheading.textContent = 'Countries you have saved for later.';
-        applyFiltersAndSort();
+        window.location.hash = '#/favorites';
     });
+    
+    if (elements.navCompare) {
+        elements.navCompare.addEventListener('click', () => {
+            window.location.hash = '#/compare';
+        });
+    }
 
-    // Modal Close
-    const closeDetails = () => elements.modal.classList.add('hidden');
-    elements.closeModalBtn.addEventListener('click', closeDetails);
-    elements.modalBackdrop.addEventListener('click', closeDetails);
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !elements.modal.classList.contains('hidden')) closeDetails();
-    });
+    // Dark Mode Toggle
+    if (elements.themeToggle) {
+        elements.themeToggle.addEventListener('click', () => {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                document.body.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+            if (leafletMapInstance) {
+                leafletMapInstance.invalidateSize();
+            }
+        });
+    }
+
+    // Init Theme from LocalStorage
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.setAttribute('data-theme', 'dark');
+    }
+
+    // Compare Selectors
+    if (elements.compareSelect1 && elements.compareSelect2) {
+        elements.compareSelect1.addEventListener('change', renderCompareResults);
+        elements.compareSelect2.addEventListener('change', renderCompareResults);
+    }
 }
 
 // Filter, Search and Sort Logic
 function applyFiltersAndSort() {
     let filtered = [...allCountries];
 
-    // 1. Filter by Favorites
+    // 1. Favorites Filter
     if (showOnlyFavorites) {
         filtered = filtered.filter(c => favorites.has(c.cca3));
     }
 
-    // 2. Filter by Search
+    // 2. Search Filter
     if (currentSearch) {
         filtered = filtered.filter(country => {
             const commonName = (country.name?.common || '').toLowerCase();
             const officialName = (country.name?.official || '').toLowerCase();
-            return commonName.includes(currentSearch) || officialName.includes(currentSearch);
+            const capital = (country.capital?.[0] || '').toLowerCase();
+            const code = (country.cca3 || '').toLowerCase();
+            return commonName.includes(currentSearch) || 
+                   officialName.includes(currentSearch) || 
+                   capital.includes(currentSearch) ||
+                   code === currentSearch;
         });
     }
 
-    // 3. Filter by Region
+    // 3. Region Filter
     if (currentRegion !== 'All') {
         filtered = filtered.filter(country => country.region === currentRegion);
     }
@@ -337,22 +1033,25 @@ function applyFiltersAndSort() {
         const nameB = b.name?.common || '';
         const popA = a.population || 0;
         const popB = b.population || 0;
+        const areaA = a.area || 0;
+        const areaB = b.area || 0;
 
         switch (currentSort) {
             case 'name-asc': return nameA.localeCompare(nameB);
             case 'name-desc': return nameB.localeCompare(nameA);
             case 'pop-asc': return popA - popB;
             case 'pop-desc': return popB - popA;
+            case 'area-desc': return areaB - areaA;
             default: return 0;
         }
     });
 
     displayedCountries = filtered;
-    renderCountries();
+    renderCountriesGrid();
 }
 
-// Rendering
-function renderCountries() {
+// Render Country Cards Grid
+function renderCountriesGrid() {
     elements.grid.innerHTML = '';
     
     if (displayedCountries.length === 0) {
@@ -361,11 +1060,11 @@ function renderCountries() {
         
         if (showOnlyFavorites && !currentSearch && currentRegion === 'All') {
             elements.messageTitle.textContent = 'No favorites yet';
-            elements.messageBody.textContent = 'Tap the ♡ icon on any country to save it here.';
+            elements.messageBody.textContent = 'Tap the ♡ icon on any country card to save it here for quick access.';
             elements.resetFiltersBtn.classList.add('hidden');
         } else {
             elements.messageTitle.textContent = 'No countries found';
-            elements.messageBody.textContent = 'Try changing your search or selecting another region.';
+            elements.messageBody.textContent = 'Try adjusting your search keywords or choosing another region filter.';
             elements.resetFiltersBtn.classList.remove('hidden');
         }
         return;
@@ -379,10 +1078,12 @@ function renderCountries() {
     displayedCountries.forEach(country => {
         const card = document.createElement('article');
         card.className = 'country-card';
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', `View details for ${country.name?.common}`);
         
         const isFav = favorites.has(country.cca3);
         const favClass = isFav ? 'active' : '';
-        
         const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
         const name = country.name?.common || 'Unknown';
         const officialName = country.name?.official || 'Unknown';
@@ -400,7 +1101,7 @@ function renderCountries() {
                         <h3 class="card-title">${name}</h3>
                         <p class="card-subtitle" title="${officialName}">${officialName}</p>
                     </div>
-                    <button class="favorite-btn ${favClass}" data-code="${country.cca3}" aria-label="Toggle favorite">
+                    <button class="favorite-btn ${favClass}" data-code="${country.cca3}" aria-label="Toggle favorite" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                     </button>
                 </div>
@@ -420,17 +1121,27 @@ function renderCountries() {
                     </div>
                 </div>
                 
-                <button class="btn-link view-details-btn" data-code="${country.cca3}">
-                    View Details
+                <span class="btn-link">
+                    Explore Details
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                </button>
+                </span>
             </div>
         `;
         
-        // Event listeners for this card
-        const viewBtn = card.querySelector('.view-details-btn');
-        viewBtn.addEventListener('click', () => showCountryDetails(country));
+        // Card click navigates to Country Details Page
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.favorite-btn')) return;
+            navigateToCountry(country.cca3);
+        });
+
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                navigateToCountry(country.cca3);
+            }
+        });
         
+        // Favorite toggle button listener
         const favBtn = card.querySelector('.favorite-btn');
         favBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -443,12 +1154,12 @@ function renderCountries() {
     elements.grid.appendChild(fragment);
 }
 
+// Skeleton Loader
 function showLoading() {
     elements.grid.innerHTML = '';
     elements.grid.classList.remove('hidden');
     elements.messageContainer.classList.add('hidden');
     
-    // Create 8 skeleton cards
     for (let i = 0; i < 8; i++) {
         const skel = document.createElement('div');
         skel.className = 'skeleton-card';
@@ -474,121 +1185,7 @@ function showError(title, message) {
     elements.resetFiltersBtn.classList.remove('hidden');
 }
 
-// Details View
-function showCountryDetails(country) {
-    // Populate Data
-    const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
-    const name = country.name?.common || 'Unknown';
-    const officialName = country.name?.official || 'Unknown';
-    
-    // Set Header/Fav button
-    const isFav = favorites.has(country.cca3);
-    elements.modalFavBtn.dataset.code = country.cca3;
-    elements.modalFavBtn.dataset.name = name;
-    updateModalFavButton(isFav);
-
-    // Build Content
-    let html = `
-        <div class="details-layout">
-            <div>
-                <div class="details-flag-wrapper">
-                    <img src="${flagUrl}" alt="Flag of ${name}">
-                </div>
-                <div class="details-header">
-                    <h2 class="details-title" id="modalCountryName">${name}</h2>
-                    <p class="details-subtitle">${officialName}</p>
-                </div>
-            </div>
-            
-            <div class="details-grid">
-                <div>
-                    <h4 class="details-section-title">Geography</h4>
-                    <div class="details-list">
-                        <div class="details-list-item">
-                            <span class="details-label">Capital</span>
-                            <span class="details-val">${country.capital?.[0] || 'Not available'}</span>
-                        </div>
-                        <div class="details-list-item">
-                            <span class="details-label">Region</span>
-                            <span class="details-val">${country.region || 'Not available'}</span>
-                        </div>
-                        <div class="details-list-item">
-                            <span class="details-label">Subregion</span>
-                            <span class="details-val">${country.subregion || 'Not available'}</span>
-                        </div>
-                        <div class="details-list-item">
-                            <span class="details-label">Area</span>
-                            <span class="details-val">${country.area ? Intl.NumberFormat().format(country.area) + ' km²' : 'Not available'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <h4 class="details-section-title">Demographics & Economy</h4>
-                    <div class="details-list">
-                        <div class="details-list-item">
-                            <span class="details-label">Population</span>
-                            <span class="details-val">${formatPopulation(country.population)}</span>
-                        </div>
-                        <div class="details-list-item">
-                            <span class="details-label">Languages</span>
-                            <span class="details-val">${getLanguages(country.languages)}</span>
-                        </div>
-                        <div class="details-list-item">
-                            <span class="details-label">Currencies</span>
-                            <span class="details-val">${getCurrencies(country.currencies)}</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div>
-                    <h4 class="details-section-title">Additional Info</h4>
-                    <div class="details-list">
-                        <div class="details-list-item">
-                            <span class="details-label">Timezones</span>
-                            <span class="details-val">${country.timezones?.join(', ') || 'Not available'}</span>
-                        </div>
-                        <div class="details-list-item">
-                            <span class="details-label">Driving Side</span>
-                            <span class="details-val" style="text-transform: capitalize;">${country.car?.side || 'Not available'}</span>
-                        </div>
-                        <div class="details-list-item">
-                            <span class="details-label">UN Member</span>
-                            <span class="details-val">${country.unMember ? 'Yes' : 'No'}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    elements.modalBody.innerHTML = html;
-    
-    // Show Modal
-    elements.modal.classList.remove('hidden');
-}
-
-function updateModalFavButton(isFav) {
-    if (isFav) {
-        elements.modalFavBtn.classList.add('active');
-        elements.modalFavBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
-    } else {
-        elements.modalFavBtn.classList.remove('active');
-        elements.modalFavBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
-    }
-}
-
-// Modal fav button listener
-elements.modalFavBtn.addEventListener('click', (e) => {
-    const code = e.currentTarget.dataset.code;
-    const name = e.currentTarget.dataset.name;
-    if (code) {
-        toggleFavorite(code, name);
-        updateModalFavButton(favorites.has(code));
-    }
-});
-
-// Favorites System
+// Favorites Management
 function loadFavorites() {
     const saved = localStorage.getItem(FAV_KEY);
     if (saved) {
@@ -616,31 +1213,29 @@ function toggleFavorite(code, name) {
     }
     
     saveFavorites();
-    showToast(`${name} ${added ? 'added to' : 'removed from'} favorites`);
+    showToast(`${name || code} ${added ? 'added to' : 'removed from'} favorites`);
     
-    // If we're on the favorites view, we might need to refresh
     if (showOnlyFavorites) {
         applyFiltersAndSort();
     } else {
-        // Just toggle the visual state on the card
+        // Toggle active style on visible cards
         const btn = document.querySelector(`.country-card .favorite-btn[data-code="${code}"]`);
         if (btn) {
             btn.classList.toggle('active', added);
             const svg = btn.querySelector('svg');
-            if(added) svg.setAttribute('fill', 'currentColor');
-            else svg.setAttribute('fill', 'none');
+            if (svg) svg.setAttribute('fill', added ? 'currentColor' : 'none');
         }
     }
 }
 
-// Utilities
+// Stats Calculation
 function updateStats() {
     if (!allCountries.length) return;
     
-    document.getElementById('statCountries').textContent = allCountries.length;
+    if (elements.statCountries) elements.statCountries.textContent = allCountries.length;
     
     const regions = new Set(allCountries.map(c => c.region).filter(Boolean));
-    document.getElementById('statRegions').textContent = regions.size;
+    if (elements.statRegions) elements.statRegions.textContent = regions.size;
     
     const languages = new Set();
     const currencies = new Set();
@@ -650,14 +1245,16 @@ function updateStats() {
         if (c.currencies) Object.keys(c.currencies).forEach(cur => currencies.add(cur));
     });
     
-    document.getElementById('statLanguages').textContent = languages.size + '+';
-    document.getElementById('statCurrencies').textContent = currencies.size;
+    if (elements.statLanguages) elements.statLanguages.textContent = languages.size + '+';
+    if (elements.statCurrencies) elements.statCurrencies.textContent = currencies.size;
 }
 
+// Formatting Utilities
 function formatPopulation(num) {
     if (num === undefined || num === null) return 'Not available';
-    if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+    if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
     if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+    if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
     return new Intl.NumberFormat().format(num);
 }
 
@@ -668,7 +1265,7 @@ function getLanguages(langsObj) {
 
 function getCurrencies(currObj) {
     if (!currObj || Object.keys(currObj).length === 0) return 'Not available';
-    return Object.values(currObj).map(c => `${c.name} (${c.symbol || ''})`.trim()).join(', ');
+    return Object.values(currObj).map(c => `${c.name || ''} (${c.symbol || ''})`.trim()).join(', ');
 }
 
 let toastTimeout;
@@ -676,17 +1273,77 @@ function showToast(message) {
     elements.toast.textContent = message;
     elements.toast.classList.remove('hidden');
     
-    // Trigger reflow
-    void elements.toast.offsetWidth;
-    
+    void elements.toast.offsetWidth; // Reflow
     elements.toast.classList.add('show');
     
     clearTimeout(toastTimeout);
     toastTimeout = setTimeout(() => {
         elements.toast.classList.remove('show');
-        setTimeout(() => elements.toast.classList.add('hidden'), 300); // wait for transition
+        setTimeout(() => elements.toast.classList.add('hidden'), 300);
     }, 3000);
 }
 
-// Run App
+// Compare Tool Helper Functions
+function populateCompareSelects() {
+    if (!elements.compareSelect1 || !elements.compareSelect2) return;
+    const sorted = [...allCountries].sort((a, b) => (a.name?.common || '').localeCompare(b.name?.common || ''));
+    let options = '<option value="">Select a country...</option>';
+    sorted.forEach(c => {
+        options += `<option value="${c.cca3}">${c.name.common}</option>`;
+    });
+    elements.compareSelect1.innerHTML = options;
+    elements.compareSelect2.innerHTML = options;
+}
+
+function renderCompareResults() {
+    if (!elements.compareSelect1 || !elements.compareSelect2) return;
+    const c1Code = elements.compareSelect1.value;
+    const c2Code = elements.compareSelect2.value;
+    
+    if (!c1Code || !c2Code) {
+        elements.compareResults.classList.add('hidden');
+        return;
+    }
+    
+    const c1 = allCountries.find(c => c.cca3 === c1Code);
+    const c2 = allCountries.find(c => c.cca3 === c2Code);
+    
+    if (!c1 || !c2) return;
+    
+    const renderCard = (country) => `
+        <div class="compare-card">
+            <img src="${country.flags?.svg || country.flags?.png || FALLBACK_FLAG}" alt="Flag of ${country.name.common}">
+            <h3>${country.name.common}</h3>
+            <div class="compare-stat">
+                <span>Region</span>
+                <span>${country.region || 'N/A'}</span>
+            </div>
+            <div class="compare-stat">
+                <span>Capital</span>
+                <span>${country.capital?.[0] || 'N/A'}</span>
+            </div>
+            <div class="compare-stat">
+                <span>Population</span>
+                <span>${formatPopulation(country.population)} (${new Intl.NumberFormat().format(country.population)})</span>
+            </div>
+            <div class="compare-stat">
+                <span>Area</span>
+                <span>${country.area ? Intl.NumberFormat().format(country.area) + ' km²' : 'N/A'}</span>
+            </div>
+            <div class="compare-stat">
+                <span>Languages</span>
+                <span title="${getLanguages(country.languages)}">${getLanguages(country.languages).substring(0, 25)}${getLanguages(country.languages).length > 25 ? '...' : ''}</span>
+            </div>
+            <div class="compare-stat">
+                <span>Driving Side</span>
+                <span style="text-transform: capitalize;">${country.car?.side || 'N/A'}</span>
+            </div>
+        </div>
+    `;
+    
+    elements.compareResults.innerHTML = renderCard(c1) + renderCard(c2);
+    elements.compareResults.classList.remove('hidden');
+}
+
+// Launch application on DOM ready
 document.addEventListener('DOMContentLoaded', init);

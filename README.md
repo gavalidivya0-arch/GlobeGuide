@@ -1,126 +1,187 @@
-# GlobeGuide - Country Explorer
+# 🌍 GlobeGuide — Global Country Explorer
 
-## Overview
+<p align="center">
+  <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="HTML5" />
+  <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" alt="CSS3" />
+  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript" />
+  <img src="https://img.shields.io/badge/Leaflet-199900?style=for-the-badge&logo=leaflet&logoColor=white" alt="Leaflet" />
+  <img src="https://img.shields.io/badge/REST_Countries_v5-2563EB?style=for-the-badge&logo=globe&logoColor=white" alt="REST Countries" />
+  <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License" />
+</p>
 
-GlobeGuide is a modern, interactive web application that lets you explore data for **254 countries and territories** worldwide. It fetches data from the [REST Countries API](https://restcountries.com/) (v5) and provides search, region filtering, sorting, a country-compare tool, and favorites that persist across sessions.
+---
 
-The project ships as a **pure HTML/CSS/JS** site - no build step, no server required. All country data is bundled in a snapshot file so the app works even offline, while still refreshing live from the API when possible.
+## 📌 Overview
 
-## Features
+**GlobeGuide** is a modern, responsive, client-side web application for exploring deep geographic, demographic, economic, and cultural data for **254 countries and territories** worldwide.
 
-- **Global Explorer**: Browse countries in a responsive, modern card grid.
-- **Detailed Views**: Open a modal with deep data for any country - geography, demographics, economy, borders, maps, and more.
-- **Compare Tool**: Select two countries and compare population, area, languages, region, and timezones side by side.
-- **Dark Mode**: Toggle between light and dark themes (persisted to local storage).
-- **Real-time Search**: Debounced search supporting partial matches.
-- **Smart Filtering & Sorting**: Filter by region and sort by name or population.
-- **Favorites System**: Save favorite countries to local storage so they persist across sessions.
-- **Random Discovery**: A "Random Country" button to discover new places.
-- **Offline-First Data**: Bundled snapshot of all countries means the app works without network access.
-- **Live API Refresh**: Automatically refreshes data from the live v5 API when the browser origin is allowlisted.
-- **Performance Optimized**: API responses are cached in `localStorage` (30 min) to avoid repeated fetches.
-- **Skeleton Loading States**: Beautiful loading placeholders for a premium feel.
-- **Error Handling**: Graceful error states, missing-data fallbacks, and placeholder flags.
+Built with **pure Vanilla HTML5, CSS3, and JavaScript (ES6+)**, GlobeGuide requires **zero build steps or heavy bundlers**. It features an offline-first data snapshot, real-time search, interactive **Leaflet.js** map exploration, an animated **World Locator**, dedicated country detail pages with **SPA hash routing**, country comparisons, and a persistent favorites system.
 
-## Technologies
+---
 
-- HTML5 (Semantic Structure)
-- CSS3 (Custom Properties, Grid, Flexbox, Animations)
-- Vanilla JavaScript (ES6+, Async/Await, Fetch API, DOM Manipulation)
-- REST Countries API (v5)
-- LocalStorage API
+## ✨ Key Features
 
-## Project Structure
+### 🔍 1. Global Explorer & Real-Time Discovery
+* **Real-time Debounced Search**: Search countries by common name, official name, capital city, or country code (`cca2`/`cca3`).
+* **Region Filtering**: Filter by continents and regions (**All**, **Africa**, **Americas**, **Asia**, **Europe**, **Oceania**).
+* **Multi-Criteria Sorting**: Sort alphabetically (**A–Z**, **Z–A**), by population (**High → Low**, **Low → High**), or by total land area (**High → Low**).
+* **🎲 Random Country Discovery**: Instantly explore a random country with one click.
+* **Global Statistics Overview**: Real-time counter for total countries, regions, spoken languages, and legal currencies.
+
+---
+
+### 🗺️ 2. Dedicated Country Details Page
+When selecting any country, GlobeGuide navigates to a dedicated page (`#/country/:code`) packed with comprehensive statistics:
+
+* **🚩 Hero Showcase**: High-resolution flag presentation with ISO code tags, official title, and badges for UN Membership, Continent, Subregion, Driving Side, and International Dialing Code.
+* **📊 Quick-Glance Metrics Grid**:
+  * 👥 **Population**: Formatted shorthand (e.g. `67.8M`) and exact count (`67,842,582`).
+  * 📐 **Total Area**: Formatted in $km^2$ and $sq\ mi$.
+  * 🏛️ **Capital City**: Government capital seat.
+  * 🗣️ **Languages**: Official and national languages spoken.
+  * 💰 **Currency**: Currency name, ISO currency code, and symbol.
+  * 🚗 **Driving Side**: Traffic driving side (`Left` / `Right`).
+* **📋 Deep Data Breakdown**:
+  * **Geography & Administration**: Capital, region, subregion, total area, coordinates ($Lat/Lng$).
+  * **Demographics & Society**: Population totals, language tags, UN membership status, calling codes.
+  * **Economy & Time Zones**: Legal currencies and symbols, UTC time zone badges, driving system.
+* **🌐 Highlighted World Map Location**:
+  * Visual vector SVG world map with continent contours.
+  * Dynamically projected coordinate pinpoint with an animated glowing radar beacon showing the country's exact global position.
+* **📍 Interactive Leaflet Map Exploration**:
+  * Embedded **Leaflet.js** map centered on the country/capital coordinates.
+  * Custom flag pin marker, interactive popup, zoom controls, and dark-theme tile styling.
+  * Quick links: `Open in Google Maps` and `OpenStreetMap`.
+* **🤝 Neighboring Border Countries**:
+  * Interactive chips for all bordering nations. Clicking any neighbor navigates directly to that country's details page.
+
+---
+
+### 🌗 3. Dark Mode & Glassmorphism Design
+* **Glassmorphism Navbar**: Sticky header with blur effects (`backdrop-filter: blur(12px)`).
+* **Dark / Light Theme Toggle**: Seamless CSS custom variable theme switching with persistent storage in `localStorage`.
+* **Smooth Micro-Animations**: Card lift hover effects, pulse loading skeletons, and fluid view transitions.
+
+---
+
+### ⚖️ 4. Country Compare Tool & Favorites
+* **Compare Tool**: Select two countries to compare population, area, languages, capital, region, and driving side side-by-side.
+* **Favorites System**: Save favorite countries with a heart toggle that persists across sessions via `localStorage`.
+
+---
+
+## 🗂️ Application Routing (SPA)
+
+GlobeGuide uses a lightweight **Hash-based SPA Router** enabling browser Back/Forward history and direct URL links:
+
+| Route | View Description |
+|---|---|
+| `#/` or `#/home` | Welcome Home View with overview hero, search, stats, and country grid |
+| `#/explore` | Explore View with full filtering, sorting, and discovery tools |
+| `#/country/:code` | Dedicated Country Details Page (e.g. `#/country/FRA`, `#/country/JPN`, `#/country/USA`) |
+| `#/favorites` | Saved Favorites Collection |
+| `#/compare` | Side-by-side Country Comparison Tool |
+
+---
+
+## 📁 Project Structure
 
 ```text
 GlobeGuide/
-|-- index.html         # Root app: main HTML structure
-|-- style.css          # Root app styling
-|-- script.js          # Root app: data fetching, state management, UI rendering
-|-- data.js            # Bundled snapshot of all 254 countries (generated)
-|-- config.js          # REST Countries API key (gitignored - add your own)
-|-- server.js          # Optional Node/Express static server (serves public/)
-|-- server.ps1         # Optional lightweight PowerShell static server
-|-- public/            # Second app copy (extra features: Compare, Dark Mode)
-|   |-- index.html
-|   |-- style.css
-|   |-- script.js
-|   |-- data.js
-|   |-- config.js
-|   `-- countries.json # Raw snapshot (used by server.js /api/countries)
-`-- README.md
+├── index.html            # Main SPA HTML structure & Leaflet integration
+├── style.css             # Comprehensive design tokens, glassmorphism, & responsive layout
+├── script.js             # State management, SPA hash routing, Leaflet lifecycle, & API integration
+├── data.js               # Bundled snapshot of 254 countries (offline-first fallback)
+├── config.js             # REST Countries API key configuration (gitignored)
+├── package.json          # Node project metadata & server start script
+├── server.js             # Node / Express static server
+├── server.ps1            # Lightweight PowerShell HTTP server (Windows)
+├── public/               # Public distribution app
+│   ├── index.html        # Public HTML
+│   ├── style.css         # Public CSS
+│   ├── script.js         # Public JS
+│   ├── data.js           # Public snapshot
+│   ├── config.js         # Public config
+│   └── countries.json    # Raw country JSON dataset
+└── README.md             # Project documentation
 ```
 
-## API
+---
 
-The project relies on the [REST Countries API](https://restcountries.com/).
+## 🚀 Getting Started & How to Run
 
-- **Endpoint Used**: `https://api.restcountries.com/countries/v5`
-- **Authentication**: Bearer token (API key). The app reads the key from `config.js` (`REST_COUNTRIES_API_KEY`).
-- **Snapshot**: `data.js` contains a normalized snapshot of all 254 countries so the app works out of the box and offline.
+### Option 1: Direct File Access (No Server Required)
+Simply double-click or open `index.html` in any modern web browser:
+```bash
+# Windows
+start index.html
+```
 
-### Setting Up the API Key
+---
 
-1. Sign up for a free key at https://restcountries.com/sign-up.
-2. Copy `config.js` content into a new `config.js` in the project root (and `public/` if you run that copy):
+### Option 2: PowerShell Static Server (Windows)
+Run the bundled lightweight PowerShell server:
+```powershell
+.\server.ps1
+```
+Open your browser at **`http://localhost:8000`**.
 
-   ```js
-   const REST_COUNTRIES_API_KEY = 'rc_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+---
+
+### Option 3: Node / Express Server
+```bash
+# Install dependencies
+npm install
+
+# Start static server
+npm start
+```
+Open your browser at **`http://localhost:3000`**.
+
+---
+
+### Option 4: VS Code Live Server Extension
+1. Install the **Live Server** extension in VS Code.
+2. Right-click `index.html` (or `public/index.html`).
+3. Select **Open with Live Server**.
+
+---
+
+## 🌐 API & Live Data Refresh
+
+GlobeGuide is powered by the [REST Countries API](https://restcountries.com/) (v5):
+
+* **API Endpoint**: `https://api.restcountries.com/countries/v5`
+* **Authentication**: Bearer Token in `config.js`
+* **Fields Utilized**: `names`, `codes`, `flag`, `capitals`, `region`, `subregion`, `area`, `population`, `languages`, `currencies`, `timezones`, `cars`, `classification`, `links`, `calling_codes`, `borders`.
+
+### Setting Up Your API Key (Optional)
+
+1. Sign up for a free API key at [REST Countries](https://restcountries.com/sign-up).
+2. Create or edit `config.js` in the project root:
+   ```javascript
+   const REST_COUNTRIES_API_KEY = 'rc_live_your_api_key_here';
    ```
+3. Add your local origin (e.g. `http://localhost:8000`) to your key's allowlist in the REST Countries dashboard.
 
-3. `config.js` is gitignored, so your key is never committed.
+> [!NOTE]
+> If no API key is provided or the connection is offline, GlobeGuide automatically serves the bundled snapshot in `data.js`.
 
-### How Live Refresh Works
+---
 
-The v5 API enforces a **per-key CORS allowlist**: browser requests are rejected unless the page's origin (e.g. `http://localhost:8000`) is added to the key's allowed origins in the [REST Countries dashboard](https://restcountries.com/api-keys).
+## 🛠️ Technology Stack
 
-The app handles both cases gracefully:
+| Technology | Purpose |
+|---|---|
+| **HTML5** | Semantic layout, accessibility, and SEO meta tags |
+| **CSS3** | Custom properties (CSS variables), glassmorphism, responsive grid & flexbox |
+| **Vanilla JavaScript (ES6+)** | Hash router, async/await, DOM manipulation, state management |
+| **Leaflet.js** | Interactive mapping with markers, popups, and OpenStreetMap tiles |
+| **LocalStorage API** | Theme preference, API cache (30 min), and saved favorites |
+| **REST Countries v5** | Global country and territory dataset |
 
-1. **Bundled snapshot** (`data.js`) is loaded first - always works, offline included.
-2. **Live refresh** is attempted next. If the origin is allowlisted, the app replaces the snapshot with fresh API data and caches it for 30 minutes. If the request is CORS-blocked, the app silently keeps the snapshot.
+---
 
-## How to Run
+## 📄 License
 
-1. Clone or download this repository.
-2. Serve the directory using a simple local HTTP server.
-
-   **Option A: PowerShell server (Windows only)**
-   ```powershell
-   .\server.ps1
-   ```
-   Then open http://localhost:8000
-
-   **Option B: VS Code Live Server**
-   Install the **Live Server** extension, right-click `index.html` (or `public/index.html`), and select **Open with Live Server**.
-
-   **Option C: Node server (serves the `public/` app)**
-   ```bash
-   npm install
-   npm start
-   ```
-   Then open http://localhost:3000
-
-3. Open your browser and navigate to the local URL.
-
-> **Tip**: The app also works by opening `index.html` directly via `file://` - no server needed.
-
-## Data Snapshot
-
-The bundled `data.js` files were generated from the live v5 API. To regenerate them (e.g. to pick up data changes), run the paginated fetch that requests all 254 records and normalize each one into the shape the UI expects. The snapshot uses `response_fields` to keep the payload small (~150 KB).
-
-## Learning Outcomes
-
-- **REST API Integration**: Fetching from a live third-party API, including paginated requests and bearer-token auth.
-- **Fetch API & Async/Await**: Modern JavaScript asynchronous data flow.
-- **JSON Parsing**: Handling complex nested objects and arrays.
-- **State Management**: Handling internal application state (all countries, displayed countries, favorites).
-- **DOM Manipulation**: Dynamically creating elements and handling events.
-- **LocalStorage**: Persisting user data and API caches across sessions.
-- **Responsive Web Design**: Building a UI that adapts from 360px mobile to 1440px desktop.
-
-## Future Improvements
-
-- **Map Integration**: Show the country on a map using Google Maps or Leaflet.
-- **Currency Converter**: Live conversion rates for the country's currency.
-- **Weather Information**: Integration with a weather API to show capital city weather.
-- **PWA Support**: Make the app installable on mobile devices.
+This project is licensed under the **MIT License**. Feel free to use, modify, and distribute for personal and commercial projects.

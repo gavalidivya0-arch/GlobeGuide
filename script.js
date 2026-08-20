@@ -31,6 +31,7 @@ const elements = {
     
     // Nav
     navLogo: document.getElementById('navLogo'),
+    navHome: document.getElementById('navHome'),
     navExplore: document.getElementById('navExplore'),
     navFavorites: document.getElementById('navFavorites'),
     explorerHeading: document.getElementById('explorerHeading'),
@@ -264,13 +265,24 @@ function setupEventListeners() {
     elements.navLogo.addEventListener('click', (e) => {
         e.preventDefault();
         elements.resetFiltersBtn.click();
-        elements.navExplore.click();
+        elements.navHome.click();
         window.scrollTo(0, 0);
+    });
+
+    elements.navHome.addEventListener('click', () => {
+        showOnlyFavorites = false;
+        elements.navHome.classList.add('active');
+        elements.navExplore.classList.remove('active');
+        elements.navFavorites.classList.remove('active');
+        elements.explorerHeading.textContent = 'Welcome to GlobeGuide';
+        elements.explorerSubheading.textContent = 'Discover countries, cultures, populations, languages, currencies, and more.';
+        applyFiltersAndSort();
     });
 
     elements.navExplore.addEventListener('click', () => {
         showOnlyFavorites = false;
         elements.navExplore.classList.add('active');
+        elements.navHome.classList.remove('active');
         elements.navFavorites.classList.remove('active');
         elements.explorerHeading.textContent = 'Explore Countries';
         elements.explorerSubheading.textContent = 'Browse and discover countries from around the world.';
@@ -280,6 +292,7 @@ function setupEventListeners() {
     elements.navFavorites.addEventListener('click', () => {
         showOnlyFavorites = true;
         elements.navFavorites.classList.add('active');
+        elements.navHome.classList.remove('active');
         elements.navExplore.classList.remove('active');
         elements.explorerHeading.textContent = 'Your Favorites';
         elements.explorerSubheading.textContent = 'Countries you have saved for later.';

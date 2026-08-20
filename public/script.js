@@ -31,6 +31,7 @@ const elements = {
     
     // Nav
     navLogo: document.getElementById('navLogo'),
+    navHome: document.getElementById('navHome'),
     navExplore: document.getElementById('navExplore'),
     navCompare: document.getElementById('navCompare'),
     navFavorites: document.getElementById('navFavorites'),
@@ -270,13 +271,26 @@ function setupEventListeners() {
     elements.navLogo.addEventListener('click', (e) => {
         e.preventDefault();
         elements.resetFiltersBtn.click();
-        elements.navExplore.click();
+        elements.navHome.click();
         window.scrollTo(0, 0);
+    });
+
+    elements.navHome.addEventListener('click', () => {
+        showOnlyFavorites = false;
+        elements.navHome.classList.add('active');
+        elements.navExplore.classList.remove('active');
+        elements.navFavorites.classList.remove('active');
+        elements.navCompare.classList.remove('active');
+        elements.compareSection.classList.add('hidden');
+        elements.explorerHeading.textContent = 'Welcome to GlobeGuide';
+        elements.explorerSubheading.textContent = 'Discover countries, cultures, populations, languages, currencies, and more.';
+        applyFiltersAndSort();
     });
 
     elements.navExplore.addEventListener('click', () => {
         showOnlyFavorites = false;
         elements.navExplore.classList.add('active');
+        elements.navHome.classList.remove('active');
         elements.navFavorites.classList.remove('active');
         elements.navCompare.classList.remove('active');
         elements.compareSection.classList.add('hidden');
@@ -288,6 +302,7 @@ function setupEventListeners() {
     elements.navFavorites.addEventListener('click', () => {
         showOnlyFavorites = true;
         elements.navFavorites.classList.add('active');
+        elements.navHome.classList.remove('active');
         elements.navExplore.classList.remove('active');
         elements.navCompare.classList.remove('active');
         elements.compareSection.classList.add('hidden');
@@ -298,6 +313,7 @@ function setupEventListeners() {
     
     elements.navCompare.addEventListener('click', () => {
         elements.navCompare.classList.add('active');
+        elements.navHome.classList.remove('active');
         elements.navExplore.classList.remove('active');
         elements.navFavorites.classList.remove('active');
         elements.grid.classList.add('hidden');

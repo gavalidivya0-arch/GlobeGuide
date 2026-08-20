@@ -338,28 +338,69 @@ input, select {
 /* Hero Section */
 .hero {
     text-align: center;
-    padding: 56px 0 40px;
-    max-width: 840px;
-    margin: 0 auto;
+    padding: 72px 28px 60px;
+    max-width: 100%;
+    margin: 16px auto 40px auto;
+    border-radius: var(--radius-xl);
+    background-image: linear-gradient(180deg, rgba(11, 25, 44, 0.38) 0%, rgba(15, 23, 42, 0.65) 100%), url('hero-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    box-shadow: 0 20px 45px -15px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
 }
 
 .hero-title {
-    font-size: 2.75rem;
+    font-size: 2.85rem;
     font-weight: 800;
     line-height: 1.15;
     margin-bottom: 16px;
-    color: var(--text-main);
+    color: #FFFFFF;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
     letter-spacing: -0.02em;
 }
 
 .hero-subtitle {
-    font-size: 1.125rem;
-    color: var(--text-secondary);
+    font-size: 1.15rem;
+    color: rgba(255, 255, 255, 0.92);
     margin-bottom: 36px;
-    max-width: 620px;
+    max-width: 640px;
     margin-left: auto;
     margin-right: auto;
     line-height: 1.6;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+
+.hero .search-input-wrapper #searchInput {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #0F172A;
+}
+
+.hero .filter-pill {
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #0F172A;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hero .filter-pill:hover {
+    background-color: #FFFFFF;
+    color: var(--primary-color);
+    border-color: #FFFFFF;
+}
+
+.hero .filter-pill.active {
+    background-color: var(--primary-color);
+    color: #FFFFFF;
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
 }
 
 /* Search */

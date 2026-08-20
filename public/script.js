@@ -329,6 +329,12 @@ function showHomeView() {
     elements.heroSection.classList.remove('hidden');
     elements.statsRow.classList.remove('hidden');
     
+    // Set Home hero background (island atoll)
+    if (elements.heroSection) {
+        elements.heroSection.classList.remove('hero-explore');
+        elements.heroSection.classList.remove('hero-no-bg');
+    }
+
     // Hide Explorer section and Compare section on Home
     elements.explorerSection.classList.add('hidden');
     elements.compareSection.classList.add('hidden');
@@ -341,11 +347,11 @@ function showHomeView() {
     elements.heroTitle.textContent = 'Explore the World, One Country at a Time';
     elements.heroSubtitle.textContent = 'Discover countries, cultures, populations, languages, currencies, and more through an interactive global explorer.';
 
-    // Render Home Travel Carousel dynamically with ALL countries
+    // Render Home Travel Carousel dynamically with famous tourist attraction photos
     renderHomeCountriesCarousel();
 }
 
-// Explore View (Displays Full Explorer Grid, Controls, Sort & Filters)
+// Explore View (Displays Full Explorer Grid, Controls, Sort & Filters with Amalfi Seaside Background)
 function showExploreView() {
     currentView = 'explore';
     showOnlyFavorites = false;
@@ -356,6 +362,12 @@ function showExploreView() {
     elements.heroSection.classList.remove('hidden');
     elements.statsRow.classList.remove('hidden');
     
+    // Set Explore section hero background (Amalfi / Mediterranean seaside town)
+    if (elements.heroSection) {
+        elements.heroSection.classList.add('hero-explore');
+        elements.heroSection.classList.remove('hero-no-bg');
+    }
+
     // Hide Home-specific section on Explore
     if (elements.homeCountriesToTravelSection) {
         elements.homeCountriesToTravelSection.classList.add('hidden');
@@ -374,7 +386,7 @@ function showExploreView() {
     applyFiltersAndSort();
 }
 
-// Favorites View
+// Favorites View (Clean Hero Without Photographic Background)
 function showFavoritesView() {
     currentView = 'favorites';
     showOnlyFavorites = true;
@@ -385,6 +397,12 @@ function showFavoritesView() {
     elements.heroSection.classList.remove('hidden');
     elements.statsRow.classList.remove('hidden');
     
+    // Remove photographic backgrounds on Favorites
+    if (elements.heroSection) {
+        elements.heroSection.classList.remove('hero-explore');
+        elements.heroSection.classList.add('hero-no-bg');
+    }
+
     if (elements.homeCountriesToTravelSection) {
         elements.homeCountriesToTravelSection.classList.add('hidden');
     }

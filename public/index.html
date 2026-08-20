@@ -87,8 +87,57 @@
                 </div>
             </section>
 
-            <!-- Controls & Explorer Area -->
-            <section class="explorer" id="explorerSection">
+            <!-- Home Page ONLY: Dynamic "Countries to Travel" Section -->
+            <section id="homeCountriesToTravelSection" class="home-countries-section">
+                <div class="home-countries-header">
+                    <div class="home-countries-title-group">
+                        <h2 class="home-countries-heading">Countries to Travel</h2>
+                        <p class="home-countries-subheading">Discover destinations from around the world</p>
+                    </div>
+                    <div class="home-countries-controls">
+                        <!-- Home Region Filter Pills -->
+                        <div class="home-filter-pills" id="homeRegionFilters">
+                            <button class="home-filter-pill active" data-region="All">All</button>
+                            <button class="home-filter-pill" data-region="Africa">Africa</button>
+                            <button class="home-filter-pill" data-region="Americas">Americas</button>
+                            <button class="home-filter-pill" data-region="Asia">Asia</button>
+                            <button class="home-filter-pill" data-region="Europe">Europe</button>
+                            <button class="home-filter-pill" data-region="Oceania">Oceania</button>
+                        </div>
+                        <!-- Carousel Navigation Arrows -->
+                        <div class="home-carousel-arrows">
+                            <button id="homeCarouselPrevBtn" class="home-carousel-nav-btn" aria-label="Previous countries" title="Previous">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                            </button>
+                            <button id="homeCarouselNextBtn" class="home-carousel-nav-btn" aria-label="Next countries" title="Next">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carousel Container -->
+                <div class="home-countries-carousel-wrapper">
+                    <div id="homeCountriesCarousel" class="home-countries-carousel">
+                        <!-- Dynamically populated travel cards for ALL 254 countries -->
+                    </div>
+                </div>
+
+                <!-- Home Empty / Loading State -->
+                <div id="homeMessageContainer" class="home-message-container hidden">
+                    <p id="homeMessageText">No countries found.</p>
+                </div>
+
+                <!-- View All Button -->
+                <div class="home-countries-footer">
+                    <a href="#/explore" class="home-view-all-btn" id="homeViewAllBtn">
+                        View All Countries in Explorer →
+                    </a>
+                </div>
+            </section>
+
+            <!-- Controls & Explorer Area (Shown on Explore Page) -->
+            <section class="explorer hidden" id="explorerSection">
                 <div class="explorer-header">
                     <div class="explorer-title">
                         <h3 id="explorerHeading">Explore Countries</h3>

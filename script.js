@@ -3,13 +3,13 @@
 const API_BASE = 'https://api.restcountries.com/countries/v5';
 const API_FIELDS = 'names.common,names.official,codes.alpha_2,codes.alpha_3,flag.url_svg,flag.url_png,capitals,region,subregion,area,population,languages,currencies,timezones,cars,classification.un_member,links.google_maps,calling_codes,borders';
 const API_PAGE_SIZE = 100;
-const API_KEY = (typeof REST_COUNTRIES_API_KEY !== 'undefined') ? REST_COUNTRIES_API_KEY : '';
+const API_KEY = (typeof REST_COUNTRIES_API_KEY !== 'undefined' && REST_COUNTRIES_API_KEY) ? REST_COUNTRIES_API_KEY : 'rc_live_7e8a57f97646446ab84a5f48ec408fa6';
 const CACHE_KEY = 'globeguide_countries_cache_v5';
 const CACHE_TIME = 30 * 60 * 1000; // 30 minutes
 const FAV_KEY = 'globeguide_favorites';
 const FALLBACK_FLAG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='213'><rect width='100%25' height='100%25' fill='%23e2e8f0'/><text x='50%25' y='55%25' font-size='72' text-anchor='middle' dominant-baseline='middle'>%F0%9F%8C%8D</text></svg>";
 
-// Approximate / Standard Geographic Center Coordinates [lat, lng] for accurate Leaflet maps & World Locator
+// Geographic Center Coordinates [lat, lng] for Leaflet maps & World Locator
 const COUNTRY_COORDINATES = {
     "AFG": [33.9391, 67.7100], "ALB": [41.1533, 20.1683], "DZA": [28.0339, 1.6596], "ASM": [-14.2710, -170.1322],
     "AND": [42.5063, 1.5218], "AGO": [-11.2027, 17.8739], "AIA": [18.2206, -63.0686], "ATA": [-75.2509, -0.0714],
@@ -88,6 +88,9 @@ let currentView = 'home'; // 'home', 'explore', 'favorites', 'compare', 'country
 let activeCountryCode = null;
 let leafletMapInstance = null;
 
+// Home Page Specific State
+let homeCurrentRegion = 'All';
+
 // DOM Elements
 const elements = {
     mainExplorerView: document.getElementById('mainExplorerView'),
@@ -95,6 +98,18 @@ const elements = {
     heroTitle: document.getElementById('heroTitle'),
     heroSubtitle: document.getElementById('heroSubtitle'),
     statsRow: document.getElementById('statsRow'),
+    
+    // Home Page Only: Countries to Travel
+    homeCountriesToTravelSection: document.getElementById('homeCountriesToTravelSection'),
+    homeCountriesCarousel: document.getElementById('homeCountriesCarousel'),
+    homeRegionFilters: document.getElementById('homeRegionFilters'),
+    homeCarouselPrevBtn: document.getElementById('homeCarouselPrevBtn'),
+    homeCarouselNextBtn: document.getElementById('homeCarouselNextBtn'),
+    homeMessageContainer: document.getElementById('homeMessageContainer'),
+    homeMessageText: document.getElementById('homeMessageText'),
+    homeViewAllBtn: document.getElementById('homeViewAllBtn'),
+
+    // Explorer Section (Explore / Favorites)
     explorerSection: document.getElementById('explorerSection'),
     grid: document.getElementById('countriesGrid'),
     searchInput: document.getElementById('searchInput'),
@@ -266,6 +281,16 @@ function mapCountry(c) {
     };
 }
 
+// Helper: Convert country cca2 code to genuine Unicode flag emoji
+function getFlagEmoji(country) {
+    if (!country.cca2 || country.cca2.length !== 2) return '🌐';
+    const codePoints = country.cca2
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+}
+
 // Routing System (Hash-based SPA Router)
 function handleRoute() {
     const hash = window.location.hash || '#/home';
@@ -292,27 +317,35 @@ function updateNavActive(activeId) {
     if (activeBtn) activeBtn.classList.add('active');
 }
 
+// Home View (Displays Hero + Dynamic "Countries to Travel" Section ONLY)
 function showHomeView() {
     currentView = 'home';
     showOnlyFavorites = false;
     updateNavActive('navHome');
 
+    // Display Home sections
     elements.countryDetailsSection.classList.add('hidden');
     elements.mainExplorerView.classList.remove('hidden');
     elements.heroSection.classList.remove('hidden');
     elements.statsRow.classList.remove('hidden');
-    elements.explorerSection.classList.remove('hidden');
-    elements.grid.classList.remove('hidden');
+    
+    // Hide Explorer section and Compare section on Home
+    elements.explorerSection.classList.add('hidden');
     elements.compareSection.classList.add('hidden');
+
+    // Show Home-specific "Countries to Travel" section
+    if (elements.homeCountriesToTravelSection) {
+        elements.homeCountriesToTravelSection.classList.remove('hidden');
+    }
 
     elements.heroTitle.textContent = 'Explore the World, One Country at a Time';
     elements.heroSubtitle.textContent = 'Discover countries, cultures, populations, languages, currencies, and more through an interactive global explorer.';
-    elements.explorerHeading.textContent = 'Welcome to GlobeGuide';
-    elements.explorerSubheading.textContent = 'Browse and discover countries from around the world.';
 
-    applyFiltersAndSort();
+    // Render Home Travel Carousel dynamically with ALL countries
+    renderHomeCountriesCarousel();
 }
 
+// Explore View (Displays Full Explorer Grid, Controls, Sort & Filters)
 function showExploreView() {
     currentView = 'explore';
     showOnlyFavorites = false;
@@ -322,6 +355,13 @@ function showExploreView() {
     elements.mainExplorerView.classList.remove('hidden');
     elements.heroSection.classList.remove('hidden');
     elements.statsRow.classList.remove('hidden');
+    
+    // Hide Home-specific section on Explore
+    if (elements.homeCountriesToTravelSection) {
+        elements.homeCountriesToTravelSection.classList.add('hidden');
+    }
+    
+    // Show Explorer section
     elements.explorerSection.classList.remove('hidden');
     elements.grid.classList.remove('hidden');
     elements.compareSection.classList.add('hidden');
@@ -334,6 +374,7 @@ function showExploreView() {
     applyFiltersAndSort();
 }
 
+// Favorites View
 function showFavoritesView() {
     currentView = 'favorites';
     showOnlyFavorites = true;
@@ -343,6 +384,11 @@ function showFavoritesView() {
     elements.mainExplorerView.classList.remove('hidden');
     elements.heroSection.classList.remove('hidden');
     elements.statsRow.classList.remove('hidden');
+    
+    if (elements.homeCountriesToTravelSection) {
+        elements.homeCountriesToTravelSection.classList.add('hidden');
+    }
+    
     elements.explorerSection.classList.remove('hidden');
     elements.grid.classList.remove('hidden');
     elements.compareSection.classList.add('hidden');
@@ -355,6 +401,7 @@ function showFavoritesView() {
     applyFiltersAndSort();
 }
 
+// Compare View
 function showCompareView() {
     currentView = 'compare';
     updateNavActive('navCompare');
@@ -363,6 +410,11 @@ function showCompareView() {
     elements.mainExplorerView.classList.remove('hidden');
     elements.heroSection.classList.add('hidden');
     elements.statsRow.classList.add('hidden');
+    
+    if (elements.homeCountriesToTravelSection) {
+        elements.homeCountriesToTravelSection.classList.add('hidden');
+    }
+    
     elements.explorerSection.classList.remove('hidden');
     elements.grid.classList.add('hidden');
     elements.messageContainer.classList.add('hidden');
@@ -398,12 +450,125 @@ function showCountryDetailsPage(countryCode) {
     currentView = 'country';
     activeCountryCode = country.cca3;
 
-    // Switch view containers
+    if (elements.homeCountriesToTravelSection) {
+        elements.homeCountriesToTravelSection.classList.add('hidden');
+    }
     elements.mainExplorerView.classList.add('hidden');
     elements.countryDetailsSection.classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     renderCountryDetails(country);
+}
+
+// Home Page: Dynamic "Countries to Travel" Carousel Rendering
+function renderHomeCountriesCarousel() {
+    if (!elements.homeCountriesCarousel) return;
+
+    let filtered = [...allCountries];
+
+    // 1. Region Filter
+    if (homeCurrentRegion !== 'All') {
+        filtered = filtered.filter(c => c.region === homeCurrentRegion);
+    }
+
+    // 2. Search Filter (if query is typed in search box)
+    if (currentSearch) {
+        filtered = filtered.filter(country => {
+            const commonName = (country.name?.common || '').toLowerCase();
+            const officialName = (country.name?.official || '').toLowerCase();
+            const capital = (country.capital?.[0] || '').toLowerCase();
+            const code = (country.cca3 || '').toLowerCase();
+            return commonName.includes(currentSearch) || 
+                   officialName.includes(currentSearch) || 
+                   capital.includes(currentSearch) ||
+                   code === currentSearch;
+        });
+    }
+
+    if (filtered.length === 0) {
+        elements.homeCountriesCarousel.innerHTML = '';
+        if (elements.homeMessageContainer) {
+            elements.homeMessageContainer.classList.remove('hidden');
+            if (elements.homeMessageText) {
+                elements.homeMessageText.textContent = `No destinations found matching "${currentSearch}".`;
+            }
+        }
+        return;
+    }
+
+    if (elements.homeMessageContainer) {
+        elements.homeMessageContainer.classList.add('hidden');
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    filtered.forEach(country => {
+        const card = document.createElement('article');
+        card.className = 'home-country-card';
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', `Explore ${country.name?.common}`);
+
+        const name = country.name?.common || 'Unknown';
+        const capital = (country.capital && country.capital.length) ? country.capital[0] : 'Not available';
+        const region = country.region || 'Not available';
+        const popFormatted = formatPopulation(country.population);
+        const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
+        const flagEmoji = getFlagEmoji(country);
+
+        card.innerHTML = `
+            <div class="home-country-header">
+                <span class="home-country-flag-icon">${flagEmoji}</span>
+                <h3 class="home-country-name" title="${name}">${name}</h3>
+            </div>
+            <div class="home-country-image-wrapper">
+                <img src="${flagUrl}" alt="Destination ${name}" class="home-country-image" loading="lazy">
+                <span class="home-country-badge">${region}</span>
+            </div>
+            <div class="home-country-info">
+                <div class="home-info-row">
+                    <span class="home-info-label">🏛️ Capital</span>
+                    <span class="home-info-val" title="${capital}">${capital}</span>
+                </div>
+                <div class="home-info-row">
+                    <span class="home-info-label">🌍 Region</span>
+                    <span class="home-info-val">${region}</span>
+                </div>
+                <div class="home-info-row">
+                    <span class="home-info-label">👥 Population</span>
+                    <span class="home-info-val">${popFormatted}</span>
+                </div>
+            </div>
+            <button class="home-country-button" data-code="${country.cca3}" aria-label="Explore ${name}">
+                Explore →
+            </button>
+        `;
+
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.home-country-button')) return;
+            navigateToCountry(country.cca3);
+        });
+
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                navigateToCountry(country.cca3);
+            }
+        });
+
+        const btn = card.querySelector('.home-country-button');
+        if (btn) {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                navigateToCountry(country.cca3);
+            });
+        }
+
+        fragment.appendChild(card);
+    });
+
+    elements.homeCountriesCarousel.innerHTML = '';
+    elements.homeCountriesCarousel.appendChild(fragment);
 }
 
 // Render Dedicated Country Details Page
@@ -794,7 +959,6 @@ function initLeafletMap(country, coords) {
     const mapElement = document.getElementById('countryLeafletMap');
     if (!mapElement || typeof L === 'undefined') return;
 
-    // Destroy existing instance if any
     if (leafletMapInstance) {
         leafletMapInstance.remove();
         leafletMapInstance = null;
@@ -805,7 +969,6 @@ function initLeafletMap(country, coords) {
     const capital = (country.capital && country.capital.length) ? country.capital[0] : name;
     const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
 
-    // Calculate sensible zoom level based on country area
     let zoomLevel = 5;
     if (country.area) {
         if (country.area > 5000000) zoomLevel = 3;
@@ -828,7 +991,6 @@ function initLeafletMap(country, coords) {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
         }).addTo(leafletMapInstance);
 
-        // Custom Marker
         const customIcon = L.divIcon({
             className: 'custom-map-pin',
             html: `
@@ -859,7 +1021,6 @@ function initLeafletMap(country, coords) {
             </div>
         `).openPopup();
 
-        // Invalidate map size after DOM settles
         setTimeout(() => {
             if (leafletMapInstance) {
                 leafletMapInstance.invalidateSize();
@@ -888,7 +1049,11 @@ function setupEventListeners() {
         }
         
         searchTimeout = setTimeout(() => {
-            applyFiltersAndSort();
+            if (currentView === 'home') {
+                renderHomeCountriesCarousel();
+            } else {
+                applyFiltersAndSort();
+            }
         }, 300);
     });
 
@@ -898,10 +1063,14 @@ function setupEventListeners() {
         currentSearch = '';
         elements.clearSearchBtn.classList.add('hidden');
         elements.searchInput.focus();
-        applyFiltersAndSort();
+        if (currentView === 'home') {
+            renderHomeCountriesCarousel();
+        } else {
+            applyFiltersAndSort();
+        }
     });
 
-    // Region Filters
+    // Explorer Region Filters
     elements.regionFilters.addEventListener('click', (e) => {
         const pill = e.target.closest('.filter-pill');
         if (pill) {
@@ -912,6 +1081,33 @@ function setupEventListeners() {
             applyFiltersAndSort();
         }
     });
+
+    // Home-specific Region Filters
+    if (elements.homeRegionFilters) {
+        elements.homeRegionFilters.addEventListener('click', (e) => {
+            const pill = e.target.closest('.home-filter-pill');
+            if (pill) {
+                document.querySelectorAll('.home-filter-pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                
+                homeCurrentRegion = pill.dataset.region;
+                renderHomeCountriesCarousel();
+            }
+        });
+    }
+
+    // Home Carousel Navigation Buttons
+    if (elements.homeCarouselPrevBtn && elements.homeCountriesCarousel) {
+        elements.homeCarouselPrevBtn.addEventListener('click', () => {
+            elements.homeCountriesCarousel.scrollBy({ left: -320 * 2, behavior: 'smooth' });
+        });
+    }
+
+    if (elements.homeCarouselNextBtn && elements.homeCountriesCarousel) {
+        elements.homeCarouselNextBtn.addEventListener('click', () => {
+            elements.homeCountriesCarousel.scrollBy({ left: 320 * 2, behavior: 'smooth' });
+        });
+    }
 
     // Sort Select
     elements.sortSelect.addEventListener('change', (e) => {
@@ -999,7 +1195,7 @@ function setupEventListeners() {
     }
 }
 
-// Filter, Search and Sort Logic
+// Filter, Search and Sort Logic (Explorer View)
 function applyFiltersAndSort() {
     let filtered = [...allCountries];
 
@@ -1050,7 +1246,7 @@ function applyFiltersAndSort() {
     renderCountriesGrid();
 }
 
-// Render Country Cards Grid
+// Render Country Cards Grid (Explorer View)
 function renderCountriesGrid() {
     elements.grid.innerHTML = '';
     
@@ -1128,7 +1324,6 @@ function renderCountriesGrid() {
             </div>
         `;
         
-        // Card click navigates to Country Details Page
         card.addEventListener('click', (e) => {
             if (e.target.closest('.favorite-btn')) return;
             navigateToCountry(country.cca3);
@@ -1141,7 +1336,6 @@ function renderCountriesGrid() {
             }
         });
         
-        // Favorite toggle button listener
         const favBtn = card.querySelector('.favorite-btn');
         favBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1218,7 +1412,6 @@ function toggleFavorite(code, name) {
     if (showOnlyFavorites) {
         applyFiltersAndSort();
     } else {
-        // Toggle active style on visible cards
         const btn = document.querySelector(`.country-card .favorite-btn[data-code="${code}"]`);
         if (btn) {
             btn.classList.toggle('active', added);
@@ -1273,7 +1466,7 @@ function showToast(message) {
     elements.toast.textContent = message;
     elements.toast.classList.remove('hidden');
     
-    void elements.toast.offsetWidth; // Reflow
+    void elements.toast.offsetWidth;
     elements.toast.classList.add('show');
     
     clearTimeout(toastTimeout);

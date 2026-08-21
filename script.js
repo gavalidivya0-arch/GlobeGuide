@@ -519,7 +519,7 @@ async function fetchGeoapifyDestinations(region) {
             const country = props.country || '';
             
             // Check for image from wiki_and_media or use a generic fallback
-            let image = 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=600&q=80';
+            let image = `https://picsum.photos/seed/${props.place_id}/600/400`;
             if (props.datasource && props.datasource.raw && props.datasource.raw.image) {
                 image = props.datasource.raw.image;
             }
@@ -597,7 +597,7 @@ async function renderGeoDestinations() {
         
         card.innerHTML = `
             <div class="geo-travel-img-wrapper">
-                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=600&q=80'">
+                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="this.src='https://picsum.photos/seed/${place.id}/600/400'">
                 <span class="geo-travel-badge">${place.country}</span>
             </div>
             <div class="geo-travel-content">

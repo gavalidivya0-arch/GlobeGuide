@@ -490,56 +490,82 @@ const GEO_REGIONS_MAP = {
     'Middle East': '34.0,12.0,63.0,42.0'
 };
 
+function parseGeoFeatures(features, seenSet = new Set(), limit = 12) {
+    const places = [];
+    for (const f of features) {
+        if (places.length >= limit) break;
+        const props = f.properties;
+        const name = props.name || props.formatted;
+        
+        // Avoid duplicates
+        if (!name || seenSet.has(name.toLowerCase())) continue;
+        seenSet.add(name.toLowerCase());
+        
+        const city = props.city || props.state || '';
+        const country = props.country || '';
+        
+        // Check for image from wiki_and_media or use a generic fallback
+        let image = `https://picsum.photos/seed/${props.place_id}/600/400`;
+        if (props.datasource && props.datasource.raw && props.datasource.raw.image) {
+            image = props.datasource.raw.image;
+        }
+        
+        places.push({
+            id: props.place_id,
+            name: name,
+            country: country,
+            city: city,
+            location: [city, country].filter(Boolean).join(', '),
+            desc: props.formatted || 'A popular tourist destination.',
+            image: image,
+            lat: props.lat,
+            lon: props.lon,
+            countryCode: props.country_code ? props.country_code.toUpperCase() : null
+        });
+    }
+    return places;
+}
+
 async function fetchGeoapifyDestinations(region) {
     if (geoDestinationsCache[region]) {
         return geoDestinationsCache[region];
     }
     
-    const rect = GEO_REGIONS_MAP[region] || GEO_REGIONS_MAP['All'];
-    
-    const url = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=rect:${rect}&limit=12&apiKey=${GEOAPIFY_API_KEY}`;
-    
     try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Geoapify API Error');
-        const data = await response.json();
-        
-        let places = [];
-        const seen = new Set();
-        
-        for (const f of data.features) {
-            const props = f.properties;
-            const name = props.name || props.formatted;
+        if (region === 'All') {
+            const regionsToFetch = ['Asia', 'Europe', 'North America', 'Middle East'];
+            const promises = regionsToFetch.map(r => {
+                const rect = GEO_REGIONS_MAP[r];
+                const url = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=rect:${rect}&limit=5&apiKey=${GEOAPIFY_API_KEY}`;
+                return fetch(url).then(res => res.ok ? res.json() : null);
+            });
             
-            // Avoid duplicates
-            if (!name || seen.has(name.toLowerCase())) continue;
-            seen.add(name.toLowerCase());
+            const results = await Promise.all(promises);
+            let places = [];
+            const seen = new Set();
             
-            const city = props.city || props.state || '';
-            const country = props.country || '';
-            
-            // Check for image from wiki_and_media or use a generic fallback
-            let image = `https://picsum.photos/seed/${props.place_id}/600/400`;
-            if (props.datasource && props.datasource.raw && props.datasource.raw.image) {
-                image = props.datasource.raw.image;
+            for (const data of results) {
+                if (data && data.features) {
+                    const parsed = parseGeoFeatures(data.features, seen, 3);
+                    places.push(...parsed);
+                }
             }
             
-            places.push({
-                id: props.place_id,
-                name: name,
-                country: country,
-                city: city,
-                location: [city, country].filter(Boolean).join(', '),
-                desc: props.formatted || 'A popular tourist destination.',
-                image: image,
-                lat: props.lat,
-                lon: props.lon,
-                countryCode: props.country_code ? props.country_code.toUpperCase() : null
-            });
+            // Shuffle to mix continents
+            places = places.sort(() => Math.random() - 0.5);
+            geoDestinationsCache[region] = places;
+            return places;
+        } else {
+            const rect = GEO_REGIONS_MAP[region];
+            const url = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=rect:${rect}&limit=12&apiKey=${GEOAPIFY_API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Geoapify API Error');
+            const data = await response.json();
+            
+            const places = parseGeoFeatures(data.features, new Set(), 12);
+            geoDestinationsCache[region] = places;
+            return places;
         }
-        
-        geoDestinationsCache[region] = places;
-        return places;
     } catch (e) {
         console.error('Failed to fetch destinations:', e);
         return null;

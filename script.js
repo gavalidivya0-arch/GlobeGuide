@@ -331,7 +331,7 @@ function showHomeView() {
     // Set Home hero background (island atoll)
     if (elements.heroSection) {
         elements.heroSection.classList.remove('hero-explore');
-        elements.heroSection.classList.remove('hero-no-bg');
+        elements.heroSection.classList.remove('hero-favorites');
     }
 
     // Hide Explorer section and Compare section on Home
@@ -364,7 +364,7 @@ function showExploreView() {
     // Set Explore section hero background (Amalfi / Mediterranean seaside town)
     if (elements.heroSection) {
         elements.heroSection.classList.add('hero-explore');
-        elements.heroSection.classList.remove('hero-no-bg');
+        elements.heroSection.classList.remove('hero-favorites');
     }
 
     // Hide Home-specific section on Explore
@@ -396,10 +396,10 @@ function showFavoritesView() {
     elements.heroSection.classList.remove('hidden');
     elements.statsRow.classList.remove('hidden');
     
-    // Remove photographic backgrounds on Favorites
+    // Remove photographic backgrounds on Favorites (wait, we want to add the specific favorites bg now)
     if (elements.heroSection) {
         elements.heroSection.classList.remove('hero-explore');
-        elements.heroSection.classList.add('hero-no-bg');
+        elements.heroSection.classList.add('hero-favorites');
     }
 
     if (elements.homeCountriesToTravelSection) {

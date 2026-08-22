@@ -101,12 +101,11 @@ const elements = {
     
     // Home Page Only: Countries to Travel
     homeCountriesToTravelSection: document.getElementById('homeCountriesToTravelSection'),
-    homeCountriesCarousel: document.getElementById('homeCountriesCarousel'),
-    homeRegionFilters: document.getElementById('homeRegionFilters'),
-    homeCarouselPrevBtn: document.getElementById('homeCarouselPrevBtn'),
-    homeCarouselNextBtn: document.getElementById('homeCarouselNextBtn'),
-    homeMessageContainer: document.getElementById('homeMessageContainer'),
-    homeMessageText: document.getElementById('homeMessageText'),
+    geoDestinationsGrid: document.getElementById('geoDestinationsGrid'),
+    geoRegionFilters: document.getElementById('geoRegionFilters'),
+    geoMessageContainer: document.getElementById('geoMessageContainer'),
+    geoMessageText: document.getElementById('geoMessageText'),
+    geoTryAgainBtn: document.getElementById('geoTryAgainBtn'),
     homeViewAllBtn: document.getElementById('homeViewAllBtn'),
 
     // Explorer Section (Explore / Favorites)
@@ -347,8 +346,8 @@ function showHomeView() {
     elements.heroTitle.textContent = 'Explore the World, One Country at a Time';
     elements.heroSubtitle.textContent = 'Discover countries, cultures, populations, languages, currencies, and more through an interactive global explorer.';
 
-    // Render Home Travel Carousel dynamically with famous tourist attraction photos
-    renderHomeCountriesCarousel();
+    // Render Geoapify Destinations
+    renderGeoDestinations();
 }
 
 // Explore View (Displays Full Explorer Grid, Controls, Sort & Filters with Amalfi Seaside Background)
@@ -478,116 +477,232 @@ function showCountryDetailsPage(countryCode) {
     renderCountryDetails(country);
 }
 
-// Home Page: Dynamic "Countries to Travel" Carousel Rendering
-function renderHomeCountriesCarousel() {
-    if (!elements.homeCountriesCarousel) return;
+// Geoapify Integration
+const GEOAPIFY_API_KEY = typeof VITE_GEOAPIFY_API_KEY !== 'undefined' ? VITE_GEOAPIFY_API_KEY : 'b933121104dd45ff94d50e9b72b6db7d';
+let geoDestinationsCache = {};
+let currentGeoRegion = 'All';
 
-    let filtered = [...allCountries];
+const GEO_REGIONS_MAP = {
+    'All': '-180,-90,180,90',
+    'Asia': '60.0,-10.0,150.0,50.0',
+    'Europe': '-10.0,35.0,30.0,60.0',
+    'North America': '-130.0,10.0,-60.0,60.0',
+    'Middle East': '34.0,12.0,63.0,42.0'
+};
 
-    // 1. Region Filter
-    if (homeCurrentRegion !== 'All') {
-        filtered = filtered.filter(c => c.region === homeCurrentRegion);
-    }
-
-    // 2. Search Filter (if query is typed in search box)
-    if (currentSearch) {
-        filtered = filtered.filter(country => {
-            const commonName = (country.name?.common || '').toLowerCase();
-            const officialName = (country.name?.official || '').toLowerCase();
-            const capital = (country.capital?.[0] || '').toLowerCase();
-            const code = (country.cca3 || '').toLowerCase();
-            return commonName.includes(currentSearch) || 
-                   officialName.includes(currentSearch) || 
-                   capital.includes(currentSearch) ||
-                   code === currentSearch;
+function parseGeoFeatures(features, seenSet = new Set(), limit = 12) {
+    const places = [];
+    for (const f of features) {
+        if (places.length >= limit) break;
+        const props = f.properties;
+        
+        let name = '';
+        if (props.name_international && props.name_international.en) {
+            name = props.name_international.en;
+        } else if (props.datasource && props.datasource.raw && props.datasource.raw['name:en']) {
+            name = props.datasource.raw['name:en'];
+        } else {
+            name = props.name || props.formatted;
+        }
+        
+        // Skip if the name contains Arabic characters (meaning no English translation is available)
+        const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+        if (arabicRegex.test(name)) {
+            continue;
+        }
+        
+        // Avoid duplicates
+        if (!name || seenSet.has(name.toLowerCase())) continue;
+        seenSet.add(name.toLowerCase());
+        
+        const city = props.city || props.state || '';
+        const country = props.country || '';
+        
+        // Check for image from wiki_and_media or use a generic fallback
+        let image = `https://picsum.photos/seed/${props.place_id}/600/400`;
+        if (props.datasource && props.datasource.raw && props.datasource.raw.image) {
+            image = props.datasource.raw.image;
+        }
+        
+        places.push({
+            id: props.place_id,
+            name: name,
+            country: country,
+            city: city,
+            location: [city, country].filter(Boolean).join(', '),
+            desc: props.formatted || 'A popular tourist destination.',
+            image: image,
+            lat: props.lat,
+            lon: props.lon,
+            countryCode: props.country_code ? props.country_code.toUpperCase() : null
         });
     }
+    return places;
+}
 
-    if (filtered.length === 0) {
-        elements.homeCountriesCarousel.innerHTML = '';
-        if (elements.homeMessageContainer) {
-            elements.homeMessageContainer.classList.remove('hidden');
-            if (elements.homeMessageText) {
-                elements.homeMessageText.textContent = `No destinations found matching "${currentSearch}".`;
+async function fetchGeoapifyDestinations(region) {
+    if (geoDestinationsCache[region]) {
+        return geoDestinationsCache[region];
+    }
+    
+    try {
+        if (region === 'All') {
+            const regionsToFetch = ['Asia', 'Europe', 'North America', 'Middle East'];
+            const promises = regionsToFetch.map(r => {
+                const rect = GEO_REGIONS_MAP[r];
+                const url = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=rect:${rect}&limit=8&lang=en&apiKey=${GEOAPIFY_API_KEY}`;
+                return fetch(url).then(res => res.ok ? res.json() : null);
+            });
+            
+            const results = await Promise.all(promises);
+            let places = [];
+            const seen = new Set();
+            
+            for (const data of results) {
+                if (data && data.features) {
+                    const parsed = parseGeoFeatures(data.features, seen, 3);
+                    places.push(...parsed);
+                }
             }
+            
+            // Shuffle to mix continents
+            places = places.sort(() => Math.random() - 0.5);
+            geoDestinationsCache[region] = places;
+            return places;
+        } else {
+            const rect = GEO_REGIONS_MAP[region];
+            const url = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=rect:${rect}&limit=12&lang=en&apiKey=${GEOAPIFY_API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Geoapify API Error');
+            const data = await response.json();
+            
+            const places = parseGeoFeatures(data.features, new Set(), 12);
+            geoDestinationsCache[region] = places;
+            return places;
         }
+    } catch (e) {
+        console.error('Failed to fetch destinations:', e);
+        return null;
+    }
+}
+
+async function renderGeoDestinations() {
+    if (!elements.geoDestinationsGrid) return;
+    
+    // Show Loading Skeletons
+    elements.geoMessageContainer.classList.add('hidden');
+    elements.geoDestinationsGrid.innerHTML = Array(4).fill(0).map(() => `
+        <article class="geo-skeleton-card">
+            <div class="geo-skeleton-img"></div>
+            <div class="geo-skeleton-content">
+                <div class="geo-skeleton-line"></div>
+                <div class="geo-skeleton-line short"></div>
+                <div class="geo-skeleton-btn"></div>
+            </div>
+        </article>
+    `).join('');
+    
+    const places = await fetchGeoapifyDestinations(currentGeoRegion);
+    
+    if (!places || places.length === 0) {
+        elements.geoDestinationsGrid.innerHTML = '';
+        elements.geoMessageContainer.classList.remove('hidden');
+        if (elements.geoMessageText) elements.geoMessageText.textContent = 'Unable to load destinations right now.';
         return;
     }
-
-    if (elements.homeMessageContainer) {
-        elements.homeMessageContainer.classList.add('hidden');
+    
+    let filteredPlaces = places;
+    if (currentSearch) {
+        filteredPlaces = places.filter(place => 
+            place.name.toLowerCase().includes(currentSearch) || 
+            place.country.toLowerCase().includes(currentSearch) ||
+            place.city.toLowerCase().includes(currentSearch)
+        );
     }
-
+    
+    if (filteredPlaces.length === 0) {
+        elements.geoDestinationsGrid.innerHTML = '';
+        elements.geoMessageContainer.classList.remove('hidden');
+        if (elements.geoMessageText) elements.geoMessageText.textContent = `No destinations found matching "${currentSearch}".`;
+        return;
+    }
+    
+    elements.geoMessageContainer.classList.add('hidden');
     const fragment = document.createDocumentFragment();
-
-    filtered.forEach(country => {
+    
+    filteredPlaces.slice(0, 12).forEach(place => {
         const card = document.createElement('article');
-        card.className = 'home-country-card';
+        card.className = 'geo-travel-card';
         card.setAttribute('tabindex', '0');
-        card.setAttribute('role', 'button');
-        card.setAttribute('aria-label', `Explore ${country.name?.common}`);
-
-        const name = country.name?.common || 'Unknown';
-        const capital = (country.capital && country.capital.length) ? country.capital[0] : 'Not available';
-        const region = country.region || 'Not available';
-        const population = formatPopulation(country.population);
-        const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
-        const flagEmoji = getFlagEmoji(country);
-
+        
         card.innerHTML = `
-            <div class="home-country-header">
-                <span class="home-country-flag-icon">${flagEmoji}</span>
-                <h3 class="home-country-name" title="${name}">${name}</h3>
+            <div class="geo-travel-img-wrapper">
+                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="this.src='https://picsum.photos/seed/${place.id}/600/400'">
+                <span class="geo-travel-badge">${place.country}</span>
             </div>
-            <div class="home-country-image-wrapper">
-                <img src="${flagUrl}" alt="Destination ${name}" class="home-country-image" loading="lazy">
-                <span class="home-country-badge">${region}</span>
+            <div class="geo-travel-content">
+                <h3 class="geo-travel-title" title="${place.name}">${place.name}</h3>
+                <div class="geo-travel-location">
+                    <span>📍</span> ${place.location}
+                </div>
+                <p class="geo-travel-desc">${place.desc}</p>
+                <button class="geo-travel-btn" data-code="${place.countryCode || ''}">
+                    Explore Destination →
+                </button>
             </div>
-            <div class="home-country-info">
-                <div class="home-info-row">
-                    <span class="home-info-label">🏛️ Capital</span>
-                    <span class="home-info-val" title="${capital}">${capital}</span>
-                </div>
-                <div class="home-info-row">
-                    <span class="home-info-label">🌍 Region</span>
-                    <span class="home-info-val">${region}</span>
-                </div>
-                <div class="home-info-row">
-                    <span class="home-info-label">👥 Population</span>
-                    <span class="home-info-val">${popFormatted}</span>
-                </div>
-            </div>
-            <button class="home-country-button" data-code="${country.cca3}" aria-label="Explore ${name}">
-                Explore →
-            </button>
         `;
-
-        card.addEventListener('click', (e) => {
-            if (e.target.closest('.home-country-button')) return;
-            navigateToCountry(country.cca3);
-        });
-
-        card.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+        
+        const btn = card.querySelector('.geo-travel-btn');
+        if (btn && place.countryCode) {
+            const action = (e) => {
                 e.preventDefault();
-                navigateToCountry(country.cca3);
-            }
-        });
-
-        const btn = card.querySelector('.home-country-button');
-        if (btn) {
-            btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                navigateToCountry(country.cca3);
+                // If it exists in allCountries, navigate to it
+                if (allCountries.some(c => c.cca2 === place.countryCode)) {
+                    navigateToCountry(place.countryCode);
+                } else {
+                    window.location.hash = '#/explore';
+                }
+            };
+            btn.addEventListener('click', action);
+            card.addEventListener('click', action);
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    action(e);
+                }
             });
         }
-
+        
         fragment.appendChild(card);
     });
-
-    elements.homeCountriesCarousel.innerHTML = '';
-    elements.homeCountriesCarousel.appendChild(fragment);
+    
+    elements.geoDestinationsGrid.innerHTML = '';
+    elements.geoDestinationsGrid.appendChild(fragment);
 }
+
+// Add event listener setup for Geoapify filters
+function setupGeoFilters() {
+    if (elements.geoRegionFilters) {
+        elements.geoRegionFilters.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                // Update active class
+                elements.geoRegionFilters.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // Update state and render
+                currentGeoRegion = e.target.getAttribute('data-region');
+                renderGeoDestinations();
+            }
+        });
+    }
+    
+    if (elements.geoTryAgainBtn) {
+        elements.geoTryAgainBtn.addEventListener('click', () => {
+            renderGeoDestinations();
+        });
+    }
+}
+
 
 // Render Dedicated Country Details Page
 function renderCountryDetails(country) {
@@ -1068,7 +1183,7 @@ function setupEventListeners() {
         
         searchTimeout = setTimeout(() => {
             if (currentView === 'home') {
-                renderHomeCountriesCarousel();
+                renderGeoDestinations();
             } else {
                 applyFiltersAndSort();
             }
@@ -1082,7 +1197,7 @@ function setupEventListeners() {
         elements.clearSearchBtn.classList.add('hidden');
         elements.searchInput.focus();
         if (currentView === 'home') {
-            renderHomeCountriesCarousel();
+            renderGeoDestinations();
         } else {
             applyFiltersAndSort();
         }
@@ -1100,32 +1215,9 @@ function setupEventListeners() {
         }
     });
 
-    // Home-specific Region Filters
-    if (elements.homeRegionFilters) {
-        elements.homeRegionFilters.addEventListener('click', (e) => {
-            const pill = e.target.closest('.home-filter-pill');
-            if (pill) {
-                document.querySelectorAll('.home-filter-pill').forEach(p => p.classList.remove('active'));
-                pill.classList.add('active');
-                
-                homeCurrentRegion = pill.dataset.region;
-                renderHomeCountriesCarousel();
-            }
-        });
-    }
+    // Home-specific Region Filters (Geoapify)
+    setupGeoFilters();
 
-    // Home Carousel Navigation Buttons
-    if (elements.homeCarouselPrevBtn && elements.homeCountriesCarousel) {
-        elements.homeCarouselPrevBtn.addEventListener('click', () => {
-            elements.homeCountriesCarousel.scrollBy({ left: -320 * 2, behavior: 'smooth' });
-        });
-    }
-
-    if (elements.homeCarouselNextBtn && elements.homeCountriesCarousel) {
-        elements.homeCarouselNextBtn.addEventListener('click', () => {
-            elements.homeCountriesCarousel.scrollBy({ left: 320 * 2, behavior: 'smooth' });
-        });
-    }
 
     // Sort Select
     elements.sortSelect.addEventListener('change', (e) => {

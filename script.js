@@ -495,7 +495,21 @@ function parseGeoFeatures(features, seenSet = new Set(), limit = 12) {
     for (const f of features) {
         if (places.length >= limit) break;
         const props = f.properties;
-        const name = props.name || props.formatted;
+        
+        let name = '';
+        if (props.name_international && props.name_international.en) {
+            name = props.name_international.en;
+        } else if (props.datasource && props.datasource.raw && props.datasource.raw['name:en']) {
+            name = props.datasource.raw['name:en'];
+        } else {
+            name = props.name || props.formatted;
+        }
+        
+        // Skip if the name contains Arabic characters (meaning no English translation is available)
+        const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+        if (arabicRegex.test(name)) {
+            continue;
+        }
         
         // Avoid duplicates
         if (!name || seenSet.has(name.toLowerCase())) continue;
@@ -536,7 +550,7 @@ async function fetchGeoapifyDestinations(region) {
             const regionsToFetch = ['Asia', 'Europe', 'North America', 'Middle East'];
             const promises = regionsToFetch.map(r => {
                 const rect = GEO_REGIONS_MAP[r];
-                const url = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=rect:${rect}&limit=5&apiKey=${GEOAPIFY_API_KEY}`;
+                const url = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=rect:${rect}&limit=8&lang=en&apiKey=${GEOAPIFY_API_KEY}`;
                 return fetch(url).then(res => res.ok ? res.json() : null);
             });
             
@@ -557,7 +571,7 @@ async function fetchGeoapifyDestinations(region) {
             return places;
         } else {
             const rect = GEO_REGIONS_MAP[region];
-            const url = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=rect:${rect}&limit=12&apiKey=${GEOAPIFY_API_KEY}`;
+            const url = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=rect:${rect}&limit=12&lang=en&apiKey=${GEOAPIFY_API_KEY}`;
             const response = await fetch(url);
             if (!response.ok) throw new Error('Geoapify API Error');
             const data = await response.json();

@@ -410,8 +410,8 @@ function showFavoritesView() {
     elements.grid.classList.remove('hidden');
     elements.compareSection.classList.add('hidden');
 
-    elements.heroTitle.textContent = 'Your Saved Favourites';
-    elements.heroSubtitle.textContent = 'Quickly access countries and territories you have saved.';
+    elements.heroTitle.textContent = 'Your Dream Destinations';
+    elements.heroSubtitle.textContent = 'Your personalized collection of breathtaking countries and territories. Plan your next unforgettable adventure right here.';
     elements.explorerHeading.textContent = 'Favourite Countries';
     elements.explorerSubheading.textContent = `${favorites.size} countries saved in your personal collection.`;
 

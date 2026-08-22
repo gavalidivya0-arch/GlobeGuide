@@ -359,6 +359,7 @@ input, select {
 
 .hero.hero-favorites {
     background-image: linear-gradient(180deg, rgba(11, 25, 44, 0.38) 0%, rgba(15, 23, 42, 0.65) 100%), url('assets/favorites-bg.jpg');
+    padding: 160px 28px 140px;
 }
 
 .hero.hero-favorites .search-container,

@@ -359,7 +359,7 @@ input, select {
 
 .hero.hero-favorites {
     background-image: linear-gradient(to bottom, rgba(248, 250, 252, 0) 50%, rgba(248, 250, 252, 1) 100%), url('favorites-hero-bg.png');
-    padding: 60px 28px 240px;
+    padding: 60px 28px 180px;
 }
 
 .hero-eyebrow {

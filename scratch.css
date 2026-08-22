@@ -1,0 +1,74 @@
+
+/* Mockup Favorite Card Styles */
+.mockup-fav-card {
+    background: #FFFFFF;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+    text-align: left;
+}
+.mockup-fav-card:hover {
+    transform: translateY(-5px);
+}
+.mockup-fav-img-wrapper {
+    position: relative;
+    height: 180px;
+    width: 100%;
+}
+.mockup-fav-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.mockup-fav-heart.favorite-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #FFFFFF;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #ef4444 !important;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    cursor: pointer;
+    z-index: 2;
+    padding: 0;
+}
+.mockup-fav-heart.favorite-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: #ef4444;
+}
+.mockup-fav-content {
+    padding: 16px;
+    flex-grow: 1;
+}
+.mockup-fav-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 8px 0;
+}
+.mockup-fav-location {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #0284c7;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+.mockup-fav-desc {
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.4;
+    margin: 0;
+}

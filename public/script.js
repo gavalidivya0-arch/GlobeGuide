@@ -328,6 +328,11 @@ function showHomeView() {
     elements.heroSection.classList.remove('hidden');
     elements.statsRow.classList.remove('hidden');
     
+    const eyebrowContainer = document.getElementById('heroEyebrowContainer');
+    if (eyebrowContainer) eyebrowContainer.classList.add('hidden');
+    const favsBtn = document.getElementById('mockupFavsBtnContainer');
+    if (favsBtn) favsBtn.classList.add('hidden');
+
     // Set Home hero background (island atoll)
     if (elements.heroSection) {
         elements.heroSection.classList.remove('hero-explore');
@@ -361,6 +366,11 @@ function showExploreView() {
     elements.heroSection.classList.remove('hidden');
     elements.statsRow.classList.remove('hidden');
     
+    const eyebrowContainer = document.getElementById('heroEyebrowContainer');
+    if (eyebrowContainer) eyebrowContainer.classList.add('hidden');
+    const favsBtn = document.getElementById('mockupFavsBtnContainer');
+    if (favsBtn) favsBtn.classList.add('hidden');
+
     // Set Explore section hero background (Amalfi / Mediterranean seaside town)
     if (elements.heroSection) {
         elements.heroSection.classList.add('hero-explore');
@@ -410,8 +420,13 @@ function showFavoritesView() {
     elements.grid.classList.remove('hidden');
     elements.compareSection.classList.add('hidden');
 
-    elements.heroTitle.textContent = 'Your Dream Destinations';
-    elements.heroSubtitle.textContent = 'Your personalized collection of breathtaking countries and territories. Plan your next unforgettable adventure right here.';
+    const eyebrowContainer = document.getElementById('heroEyebrowContainer');
+    if (eyebrowContainer) eyebrowContainer.classList.remove('hidden');
+    const favsBtn = document.getElementById('mockupFavsBtnContainer');
+    if (favsBtn) favsBtn.classList.remove('hidden');
+
+    elements.heroTitle.textContent = 'My Favourite Places';
+    elements.heroSubtitle.textContent = 'A collection of places you love and want to explore again.';
     elements.explorerHeading.textContent = 'Favourite Countries';
     elements.explorerSubheading.textContent = `${favorites.size} countries saved in your personal collection.`;
 
@@ -428,6 +443,9 @@ function showCompareView() {
     elements.heroSection.classList.add('hidden');
     elements.statsRow.classList.add('hidden');
     
+    const favsBtn = document.getElementById('mockupFavsBtnContainer');
+    if (favsBtn) favsBtn.classList.add('hidden');
+
     if (elements.homeCountriesToTravelSection) {
         elements.homeCountriesToTravelSection.classList.add('hidden');
     }
@@ -1383,56 +1401,63 @@ function renderCountriesGrid() {
     
     displayedCountries.forEach(country => {
         const card = document.createElement('article');
-        card.className = 'country-card';
-        card.setAttribute('tabindex', '0');
-        card.setAttribute('role', 'button');
-        card.setAttribute('aria-label', `View details for ${country.name?.common}`);
-        
-        const isFav = favorites.has(country.cca3);
-        const favClass = isFav ? 'active' : '';
-        const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
-        const name = country.name?.common || 'Unknown';
-        const officialName = country.name?.official || 'Unknown';
-        const capital = country.capital?.[0] || 'Not available';
-        const region = country.region || 'Not available';
-        const population = formatPopulation(country.population);
-
-        card.innerHTML = `
-            <div class="card-flag-wrapper">
-                <img src="${flagUrl}" alt="Flag of ${name}" class="card-flag" loading="lazy">
-            </div>
-            <div class="card-content">
-                <div class="card-header">
-                    <div>
-                        <h3 class="card-title">${name}</h3>
-                        <p class="card-subtitle" title="${officialName}">${officialName}</p>
-                    </div>
-                    <button class="favorite-btn ${favClass}" data-code="${country.cca3}" aria-label="Toggle favorite" title="${isFav ? 'Remove from favourites' : 'Add to favourites'}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        if (showOnlyFavorites) {
+            card.className = 'mockup-fav-card';
+            card.innerHTML = `
+                <div class="mockup-fav-img-wrapper">
+                    <img src="https://picsum.photos/seed/${country.cca3}/600/400" alt="${name} image" loading="lazy">
+                    <button class="favorite-btn mockup-fav-heart active" data-code="${country.cca3}" aria-label="Remove from favourites" title="Remove from favourites">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                     </button>
                 </div>
-                
-                <div class="card-details">
-                    <div class="detail-row">
-                        <span class="detail-label">Capital</span>
-                        <span class="detail-value">${capital}</span>
+                <div class="mockup-fav-content">
+                    <h3 class="mockup-fav-title">${name}</h3>
+                    <div class="mockup-fav-location">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <span>${region}</span>
                     </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Region</span>
-                        <span class="detail-value">${region}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Population</span>
-                        <span class="detail-value">${population}</span>
-                    </div>
+                    <p class="mockup-fav-desc">A beautiful destination known for its amazing culture, landscapes, and heritage. Plan your next unforgettable trip here.</p>
                 </div>
-                
-                <span class="btn-link">
-                    Explore Details
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                </span>
-            </div>
-        `;
+            `;
+        } else {
+            card.className = 'country-card';
+            card.innerHTML = `
+                <div class="card-flag-wrapper">
+                    <img src="${flagUrl}" alt="Flag of ${name}" class="card-flag" loading="lazy">
+                </div>
+                <div class="card-content">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">${name}</h3>
+                            <p class="card-subtitle" title="${officialName}">${officialName}</p>
+                        </div>
+                        <button class="favorite-btn ${favClass}" data-code="${country.cca3}" aria-label="Toggle favorite" title="${isFav ? 'Remove from favourites' : 'Add to favourites'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        </button>
+                    </div>
+                    
+                    <div class="card-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Capital</span>
+                            <span class="detail-value">${capital}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Region</span>
+                            <span class="detail-value">${region}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Population</span>
+                            <span class="detail-value">${population}</span>
+                        </div>
+                    </div>
+                    
+                    <span class="btn-link">
+                        Explore Details
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </span>
+                </div>
+            `;
+        }
         
         card.addEventListener('click', (e) => {
             if (e.target.closest('.favorite-btn')) return;
@@ -1491,13 +1516,17 @@ function showError(title, message) {
 
 // Favorites Management
 function loadFavorites() {
-    const saved = localStorage.getItem(FAV_KEY);
-    if (saved) {
-        try {
+    try {
+        const saved = localStorage.getItem(FAV_KEY);
+        if (saved) {
             favorites = new Set(JSON.parse(saved));
-        } catch (e) {
-            favorites = new Set();
+        } else {
+            favorites = new Set(['MDV', 'IDN', 'GRC', 'THA', 'PYF']);
+            saveFavorites();
         }
+    } catch (e) {
+        console.error('Error loading favorites', e);
+        favorites = new Set(['MDV', 'IDN', 'GRC', 'THA', 'PYF']);
     }
 }
 

@@ -328,6 +328,11 @@ function showHomeView() {
     elements.heroSection.classList.remove('hidden');
     elements.statsRow.classList.remove('hidden');
     
+    const eyebrowContainer = document.getElementById('heroEyebrowContainer');
+    if (eyebrowContainer) eyebrowContainer.classList.add('hidden');
+    const favsBtn = document.getElementById('mockupFavsBtnContainer');
+    if (favsBtn) favsBtn.classList.add('hidden');
+
     // Set Home hero background (island atoll)
     if (elements.heroSection) {
         elements.heroSection.classList.remove('hero-explore');
@@ -341,6 +346,10 @@ function showHomeView() {
     // Show Home-specific "Countries to Travel" section
     if (elements.homeCountriesToTravelSection) {
         elements.homeCountriesToTravelSection.classList.remove('hidden');
+    }
+
+    if (elements.explorerSection) {
+        elements.explorerSection.classList.remove('favorites-active');
     }
 
     elements.heroTitle.textContent = 'Explore the World, One Country at a Time';
@@ -361,6 +370,11 @@ function showExploreView() {
     elements.heroSection.classList.remove('hidden');
     elements.statsRow.classList.remove('hidden');
     
+    const eyebrowContainer = document.getElementById('heroEyebrowContainer');
+    if (eyebrowContainer) eyebrowContainer.classList.add('hidden');
+    const favsBtn = document.getElementById('mockupFavsBtnContainer');
+    if (favsBtn) favsBtn.classList.add('hidden');
+
     // Set Explore section hero background (Amalfi / Mediterranean seaside town)
     if (elements.heroSection) {
         elements.heroSection.classList.add('hero-explore');
@@ -374,6 +388,7 @@ function showExploreView() {
     
     // Show Explorer section
     elements.explorerSection.classList.remove('hidden');
+    elements.explorerSection.classList.remove('favorites-active');
     elements.grid.classList.remove('hidden');
     elements.compareSection.classList.add('hidden');
 
@@ -407,11 +422,17 @@ function showFavoritesView() {
     }
     
     elements.explorerSection.classList.remove('hidden');
+    elements.explorerSection.classList.add('favorites-active');
     elements.grid.classList.remove('hidden');
     elements.compareSection.classList.add('hidden');
 
-    elements.heroTitle.textContent = 'Your Dream Destinations';
-    elements.heroSubtitle.textContent = 'Your personalized collection of breathtaking countries and territories. Plan your next unforgettable adventure right here.';
+    const eyebrowContainer = document.getElementById('heroEyebrowContainer');
+    if (eyebrowContainer) eyebrowContainer.classList.remove('hidden');
+    const favsBtn = document.getElementById('mockupFavsBtnContainer');
+    if (favsBtn) favsBtn.classList.remove('hidden');
+
+    elements.heroTitle.textContent = 'My Favourite Places';
+    elements.heroSubtitle.textContent = 'A collection of places you love and want to explore again.';
     elements.explorerHeading.textContent = 'Favourite Countries';
     elements.explorerSubheading.textContent = `${favorites.size} countries saved in your personal collection.`;
 
@@ -428,6 +449,9 @@ function showCompareView() {
     elements.heroSection.classList.add('hidden');
     elements.statsRow.classList.add('hidden');
     
+    const favsBtn = document.getElementById('mockupFavsBtnContainer');
+    if (favsBtn) favsBtn.classList.add('hidden');
+
     if (elements.homeCountriesToTravelSection) {
         elements.homeCountriesToTravelSection.classList.add('hidden');
     }
@@ -1354,6 +1378,104 @@ function applyFiltersAndSort() {
 
     displayedCountries = filtered;
     renderCountriesGrid();
+    
+    if (showOnlyFavorites && currentRegion === 'All' && !currentSearch) {
+        renderMockupFavorites();
+    } else {
+        const mockupGrid = document.getElementById('mockupFavoritesGrid');
+        if (mockupGrid) mockupGrid.classList.add('hidden');
+        const btnContainer = document.getElementById('mockupFavsBtnContainer');
+        if (btnContainer) btnContainer.classList.add('hidden');
+    }
+}
+
+// Render the top 4 favorites as mockup cards
+function renderMockupFavorites() {
+    const mockupGrid = document.getElementById('mockupFavoritesGrid');
+    if (!mockupGrid) return;
+    
+    const topFavCodes = [...favorites].slice(0, 4);
+    if (topFavCodes.length === 0) {
+        mockupGrid.classList.add('hidden');
+        const btnContainer = document.getElementById('mockupFavsBtnContainer');
+        if (btnContainer) btnContainer.classList.add('hidden');
+        return;
+    }
+
+    mockupGrid.classList.remove('hidden');
+    const btnContainer = document.getElementById('mockupFavsBtnContainer');
+    if (btnContainer) btnContainer.classList.remove('hidden');
+    mockupGrid.innerHTML = '';
+    
+    const fragment = document.createDocumentFragment();
+    
+    topFavCodes.forEach(code => {
+        const country = allCountries.find(c => c.cca3 === code);
+        if (!country) return;
+        
+        const name = country.name?.common || 'Unknown';
+        const region = country.region || 'Not available';
+        
+        let cardTitle = name;
+        let cardLocation = region;
+        let cardDesc = 'A beautiful destination known for its amazing culture, landscapes, and heritage. Plan your next unforgettable trip here.';
+        
+        if (country.cca3 === 'MDV') {
+            cardTitle = 'Maldives';
+            cardLocation = 'Maldives';
+            cardDesc = 'Paradise on earth with crystal clear waters and white beaches.';
+        } else if (country.cca3 === 'IDN') {
+            cardTitle = 'Bali';
+            cardLocation = 'Indonesia';
+            cardDesc = 'A tropical heaven known for its beaches, culture and temples.';
+        } else if (country.cca3 === 'GRC') {
+            cardTitle = 'Santorini';
+            cardLocation = 'Greece';
+            cardDesc = 'Stunning sunsets, white houses and breathtaking sea views.';
+        } else if (country.cca3 === 'THA') {
+            cardTitle = 'Phuket';
+            cardLocation = 'Thailand';
+            cardDesc = 'Beautiful beaches, vibrant life and tropical adventures.';
+        } else if (country.cca3 === 'PYF') {
+            cardTitle = 'Bora Bora';
+            cardLocation = 'French Polynesia';
+            cardDesc = 'Luxury overwater villas and unmatched natural beauty.';
+        }
+
+        const card = document.createElement('article');
+        card.className = 'mockup-fav-card';
+        card.innerHTML = `
+            <div class="mockup-fav-img-wrapper">
+                <img src="https://picsum.photos/seed/${country.cca3}/600/400" alt="${cardTitle} image" loading="lazy">
+                <button class="favorite-btn mockup-fav-heart active" data-code="${country.cca3}" aria-label="Remove from favourites" title="Remove from favourites">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                </button>
+            </div>
+            <div class="mockup-fav-content">
+                <h3 class="mockup-fav-title">${cardTitle}</h3>
+                <div class="mockup-fav-location">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <span>${cardLocation}</span>
+                </div>
+                <p class="mockup-fav-desc">${cardDesc}</p>
+            </div>
+        `;
+        
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.favorite-btn')) return;
+            navigateToCountry(country.cca3);
+        });
+        
+        const favBtn = card.querySelector('.favorite-btn');
+        favBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleFavorite(country.cca3, country.name?.common);
+        });
+        
+        fragment.appendChild(card);
+    });
+    
+    mockupGrid.appendChild(fragment);
 }
 
 // Render Country Cards Grid (Explorer View)
@@ -1382,21 +1504,17 @@ function renderCountriesGrid() {
     const fragment = document.createDocumentFragment();
     
     displayedCountries.forEach(country => {
-        const card = document.createElement('article');
-        card.className = 'country-card';
-        card.setAttribute('tabindex', '0');
-        card.setAttribute('role', 'button');
-        card.setAttribute('aria-label', `View details for ${country.name?.common}`);
-        
-        const isFav = favorites.has(country.cca3);
-        const favClass = isFav ? 'active' : '';
-        const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
         const name = country.name?.common || 'Unknown';
         const officialName = country.name?.official || 'Unknown';
-        const capital = country.capital?.[0] || 'Not available';
+        const capital = (country.capital && country.capital.length) ? country.capital.join(', ') : 'Not available';
         const region = country.region || 'Not available';
         const population = formatPopulation(country.population);
+        const flagUrl = country.flags?.svg || country.flags?.png || FALLBACK_FLAG;
+        const isFav = favorites.has(country.cca3);
+        const favClass = isFav ? 'active' : '';
 
+        const card = document.createElement('article');
+        card.className = 'country-card';
         card.innerHTML = `
             <div class="card-flag-wrapper">
                 <img src="${flagUrl}" alt="Flag of ${name}" class="card-flag" loading="lazy">
@@ -1491,13 +1609,17 @@ function showError(title, message) {
 
 // Favorites Management
 function loadFavorites() {
-    const saved = localStorage.getItem(FAV_KEY);
-    if (saved) {
-        try {
+    try {
+        const saved = localStorage.getItem(FAV_KEY);
+        if (saved) {
             favorites = new Set(JSON.parse(saved));
-        } catch (e) {
-            favorites = new Set();
+        } else {
+            favorites = new Set(['MDV', 'IDN', 'GRC', 'THA', 'PYF']);
+            saveFavorites();
         }
+    } catch (e) {
+        console.error('Error loading favorites', e);
+        favorites = new Set(['MDV', 'IDN', 'GRC', 'THA', 'PYF']);
     }
 }
 

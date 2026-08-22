@@ -1,23 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GlobeGuide — Country Explorer</title>
-    <meta name="description" content="Discover countries, cultures, populations, languages, currencies, and more through an interactive global explorer.">
+    <meta name="description"
+        content="Discover countries, cultures, populations, languages, currencies, and more through an interactive global explorer.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Leaflet CSS for Interactive Map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
         <div class="container header-content">
             <a href="#/home" class="logo" id="navLogo" aria-label="GlobeGuide Home">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="globe-icon"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="globe-icon">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path
+                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                    </path>
+                </svg>
                 <div class="logo-text">
                     <h1>GlobeGuide</h1>
                     <span>Explore the world</span>
@@ -28,11 +40,22 @@
                 <button id="navExplore" class="nav-link">Explore</button>
                 <button id="navCompare" class="nav-link">Compare</button>
                 <button id="navFavorites" class="nav-link">Favourites</button>
-                <button id="themeToggle" class="nav-icon theme-toggle" aria-label="Toggle Dark Mode" title="Toggle Dark Mode">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="moon-icon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                <button id="themeToggle" class="nav-icon theme-toggle" aria-label="Toggle Dark Mode"
+                    title="Toggle Dark Mode">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="moon-icon">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
                 </button>
-                <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="nav-icon" aria-label="GitHub">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="nav-icon"
+                    aria-label="GitHub">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+                        </path>
+                    </svg>
                 </a>
             </nav>
         </div>
@@ -43,16 +66,42 @@
         <div id="mainExplorerView">
             <!-- Hero Section -->
             <section class="hero" id="heroSection">
+                <div id="heroEyebrowContainer" class="hero-eyebrow hidden">
+                    <div class="hero-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z">
+                            </path>
+                        </svg>
+                    </div>
+                    <p class="hero-eyebrow-text">— YOUR FAVOURITE Destinations
+
+                    </p>
+                </div>
                 <h2 class="hero-title" id="heroTitle">Explore the World, One Country at a Time</h2>
-                <p class="hero-subtitle" id="heroSubtitle">Discover countries, cultures, populations, languages, currencies, and more through an interactive global explorer.</p>
-                
+                <p class="hero-subtitle" id="heroSubtitle">Discover countries, cultures, populations, languages,
+                    currencies, and more through an interactive global explorer.</p>
+
                 <div class="search-container">
                     <div class="search-input-wrapper">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" id="searchInput" placeholder="Search for a country by name, capital, or code..." aria-label="Search countries">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="search-icon">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="searchInput"
+                            placeholder="Search for a country by name, capital, or code..."
+                            aria-label="Search countries">
 
                         <button id="clearSearch" class="clear-button hidden" aria-label="Clear search">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -92,7 +141,8 @@
                 <div class="home-countries-header">
                     <div class="home-countries-title-group">
                         <h2 class="home-countries-heading">Places to Visit</h2>
-                        <p class="home-countries-subheading">Discover amazing destinations and iconic places around the world.</p>
+                        <p class="home-countries-subheading">Discover amazing destinations and iconic places around the
+                            world.</p>
                     </div>
                     <div class="home-countries-controls">
                         <!-- Home Region Filter Pills -->
@@ -129,7 +179,16 @@
 
             <!-- Controls & Explorer Area (Shown on Explore Page) -->
             <section class="explorer hidden" id="explorerSection">
-                <div class="explorer-header">
+                <div id="mockupFavoritesGrid" class="countries-grid mockup-overlap-grid hidden" style="margin-bottom: 24px;"></div>
+                
+                <div id="mockupFavsBtnContainer" class="view-all-favorites-wrapper hidden" style="margin-bottom: 60px;">
+                    <button class="view-all-btn" onclick="document.getElementById('explorerHeader').scrollIntoView({behavior: 'smooth'})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        View All Favourites &rarr;
+                    </button>
+                </div>
+
+                <div class="explorer-header" id="explorerHeader">
                     <div class="explorer-title">
                         <h3 id="explorerHeading">Explore Countries</h3>
                         <p id="explorerSubheading">Browse and discover countries from around the world.</p>
@@ -151,7 +210,7 @@
                 <div id="countriesGrid" class="countries-grid">
                     <!-- Country cards will be injected here via JS -->
                 </div>
-                
+
                 <!-- Empty State / Error State container -->
                 <div id="messageContainer" class="message-container hidden">
                     <h3 id="messageTitle">No countries found</h3>
@@ -165,12 +224,16 @@
                 <div class="compare-selectors">
                     <div class="selector-box">
                         <label for="compareSelect1">Country 1</label>
-                        <select id="compareSelect1" class="compare-select"><option value="">Select a country...</option></select>
+                        <select id="compareSelect1" class="compare-select">
+                            <option value="">Select a country...</option>
+                        </select>
                     </div>
                     <div class="compare-vs">VS</div>
                     <div class="selector-box">
                         <label for="compareSelect2">Country 2</label>
-                        <select id="compareSelect2" class="compare-select"><option value="">Select a country...</option></select>
+                        <select id="compareSelect2" class="compare-select">
+                            <option value="">Select a country...</option>
+                        </select>
                     </div>
                 </div>
                 <div id="compareResults" class="compare-results hidden">
@@ -203,9 +266,11 @@
     <div id="toast" class="toast hidden" role="alert"></div>
 
     <!-- Leaflet JS for Interactive Map -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="data.js"></script>
     <script src="config.js"></script>
     <script src="script.js"></script>
 </body>
+
 </html>

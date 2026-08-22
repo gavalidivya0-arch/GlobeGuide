@@ -362,6 +362,33 @@ input, select {
     padding: 60px 28px 240px;
 }
 
+.hero-eyebrow {
+    margin-bottom: 24px;
+    animation: fadeIn 0.4s ease;
+}
+
+.hero-icon {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: transparent;
+    border: 2px solid #FFFFFF;
+    color: #FFFFFF;
+    margin: 0 auto 16px auto;
+}
+
+.hero-eyebrow-text {
+    color: #38bdf8; /* cyan */
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin: 0;
+}
+
 .hero.hero-favorites .search-container,
 .hero.hero-favorites .filters {
     display: none;
@@ -2211,4 +2238,106 @@ input, select {
 #geoMessageText {
     margin-bottom: 16px;
     color: var(--text-secondary);
+}
+
+/* Mockup Favorite Card Styles */
+.mockup-fav-card {
+    background: var(--surface-color);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    text-align: left;
+    height: 100%;
+}
+.mockup-fav-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+.mockup-fav-img-wrapper {
+    position: relative;
+    height: 180px;
+    width: 100%;
+}
+.mockup-fav-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.mockup-fav-heart.favorite-btn {
+    position: absolute !important;
+    top: 12px;
+    right: 12px;
+    background: #FFFFFF !important;
+    border-radius: 50% !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    color: #ef4444 !important;
+    border: none !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+    cursor: pointer;
+    z-index: 2;
+    padding: 0 !important;
+}
+.mockup-fav-heart.favorite-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: #ef4444;
+}
+.mockup-fav-content {
+    padding: 16px;
+    flex-grow: 1;
+}
+.mockup-fav-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 8px 0;
+}
+.mockup-fav-location {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #0284c7; /* Cyan blue for location text */
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+.mockup-fav-location svg {
+    color: #64748b;
+}
+.mockup-fav-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.view-all-favorites-wrapper {
+    text-align: center;
+    margin-top: 40px;
+}
+
+.view-all-btn {
+    background: #1e293b;
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 30px;
+    border: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.view-all-btn:hover {
+    background: #334155;
 }

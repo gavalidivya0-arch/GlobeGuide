@@ -410,9 +410,9 @@ function showFavoritesView() {
     elements.grid.classList.remove('hidden');
     elements.compareSection.classList.add('hidden');
 
-    elements.heroTitle.textContent = 'Your Saved Favorites';
+    elements.heroTitle.textContent = 'Your Saved Favourites';
     elements.heroSubtitle.textContent = 'Quickly access countries and territories you have saved.';
-    elements.explorerHeading.textContent = 'Favorite Countries';
+    elements.explorerHeading.textContent = 'Favourite Countries';
     elements.explorerSubheading.textContent = `${favorites.size} countries saved in your personal collection.`;
 
     applyFiltersAndSort();
@@ -791,7 +791,7 @@ function renderCountryDetails(country) {
             <div class="details-top-actions">
                 <button class="action-pill-btn ${isFav ? 'active' : ''}" id="detailsFavToggleBtn" data-code="${country.cca3}" data-name="${name}">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                    <span>${isFav ? 'Saved to Favorites' : 'Add to Favorites'}</span>
+                    <span>${isFav ? 'Saved to Favourites' : 'Add to Favourites'}</span>
                 </button>
                 <button class="action-pill-btn" id="detailsShareBtn" title="Copy shareable link">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
@@ -1062,7 +1062,7 @@ function renderCountryDetails(country) {
             favToggleBtn.classList.toggle('active', currentlyFav);
             const span = favToggleBtn.querySelector('span');
             const svg = favToggleBtn.querySelector('svg');
-            if (span) span.textContent = currentlyFav ? 'Saved to Favorites' : 'Add to Favorites';
+            if (span) span.textContent = currentlyFav ? 'Saved to Favourites' : 'Add to Favourites';
             if (svg) svg.setAttribute('fill', currentlyFav ? 'currentColor' : 'none');
         });
     }
@@ -1365,7 +1365,7 @@ function renderCountriesGrid() {
         elements.messageContainer.classList.remove('hidden');
         
         if (showOnlyFavorites && !currentSearch && currentRegion === 'All') {
-            elements.messageTitle.textContent = 'No favorites yet';
+            elements.messageTitle.textContent = 'No favourites yet';
             elements.messageBody.textContent = 'Tap the ♡ icon on any country card to save it here for quick access.';
             elements.resetFiltersBtn.classList.add('hidden');
         } else {
@@ -1407,7 +1407,7 @@ function renderCountriesGrid() {
                         <h3 class="card-title">${name}</h3>
                         <p class="card-subtitle" title="${officialName}">${officialName}</p>
                     </div>
-                    <button class="favorite-btn ${favClass}" data-code="${country.cca3}" aria-label="Toggle favorite" title="${isFav ? 'Remove from favorites' : 'Add to favorites'}">
+                    <button class="favorite-btn ${favClass}" data-code="${country.cca3}" aria-label="Toggle favorite" title="${isFav ? 'Remove from favourites' : 'Add to favourites'}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                     </button>
                 </div>
@@ -1517,7 +1517,7 @@ function toggleFavorite(code, name) {
     }
     
     saveFavorites();
-    showToast(`${name || code} ${added ? 'added to' : 'removed from'} favorites`);
+    showToast(`${name || code} ${added ? 'added to' : 'removed from'} favourites`);
     
     if (showOnlyFavorites) {
         applyFiltersAndSort();

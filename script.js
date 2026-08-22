@@ -394,7 +394,7 @@ function showFavoritesView() {
     elements.countryDetailsSection.classList.add('hidden');
     elements.mainExplorerView.classList.remove('hidden');
     elements.heroSection.classList.remove('hidden');
-    elements.statsRow.classList.remove('hidden');
+    elements.statsRow.classList.add('hidden'); // Hide global stats in Favorites
     
     // Remove photographic backgrounds on Favorites (wait, we want to add the specific favorites bg now)
     if (elements.heroSection) {

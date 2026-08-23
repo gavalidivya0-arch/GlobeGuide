@@ -76,6 +76,67 @@ const COUNTRY_COORDINATES = {
     "ZWE": [-19.0154, 29.1549], "Abkhazia": [43.0016, 41.0234]
 };
 
+// India Travel Destinations Data
+const INDIA_STATES_CITIES = {
+    "Maharashtra": {
+        "Mumbai": [19.0760, 72.8777],
+        "Pune": [18.5204, 73.8567]
+    },
+    "Rajasthan": {
+        "Jaipur": [26.9124, 75.7873],
+        "Udaipur": [24.5854, 73.6811]
+    },
+    "Goa": {
+        "North Goa": [15.4989, 73.8278],
+        "South Goa": [15.2736, 73.9698]
+    },
+    "Kerala": {
+        "Munnar": [10.0889, 77.0595],
+        "Alleppey": [9.4981, 76.3388],
+        "Kochi": [9.9312, 76.2673]
+    },
+    "Uttar Pradesh": {
+        "Agra": [27.1767, 78.0081],
+        "Varanasi": [25.3176, 82.9739]
+    },
+    "Delhi": {
+        "New Delhi": [28.6139, 77.2090]
+    },
+    "Karnataka": {
+        "Bengaluru": [12.9716, 77.5946],
+        "Mysuru": [12.2958, 76.6394]
+    },
+    "Tamil Nadu": {
+        "Chennai": [13.0827, 80.2707],
+        "Ooty": [11.4100, 76.6950]
+    },
+    "West Bengal": {
+        "Kolkata": [22.5726, 88.3639],
+        "Darjeeling": [27.0410, 88.2663]
+    },
+    "Himachal Pradesh": {
+        "Shimla": [31.1048, 77.1734],
+        "Manali": [32.2396, 77.1887]
+    },
+    "Uttarakhand": {
+        "Rishikesh": [30.0869, 78.2676],
+        "Nainital": [29.3919, 79.4542]
+    },
+    "Jammu & Kashmir": {
+        "Srinagar": [34.0837, 74.7973]
+    },
+    "Punjab": {
+        "Amritsar": [31.6340, 74.8723]
+    }
+};
+
+// India specific state
+let indiaDestinationsCache = {};
+let currentIndiaState = 'Maharashtra';
+let currentIndiaCity = 'Mumbai';
+let currentIndiaFilter = 'All';
+let currentIndiaSearch = '';
+
 // Application State
 let allCountries = [];
 let displayedCountries = [];
@@ -805,7 +866,7 @@ function renderCountryDetails(country) {
     }
 
     // Build the Complete Country Details Page HTML
-    const detailsHtml = `
+    let detailsHtml = `
         <!-- Top Navigation & Action Bar -->
         <div class="details-nav-bar">
             <button class="btn-back-details" id="backToExploreBtn" aria-label="Back to Explore">
@@ -1064,6 +1125,55 @@ function renderCountryDetails(country) {
         </div>
     `;
 
+    // India specific UI section
+    if (country.cca3 === 'IND' || country.cca2 === 'IN') {
+        const stateOptions = Object.keys(INDIA_STATES_CITIES).map(state => `<option value="${state}">${state}</option>`).join('');
+        detailsHtml += `
+            <div class="india-travel-section">
+                <div class="india-travel-header">
+                    <h2 class="india-travel-title">Discover India 🇮🇳</h2>
+                    <p class="india-travel-subtitle">Explore popular tourist destinations across beautiful Indian states and cities.</p>
+                </div>
+                
+                <div class="india-selectors-row">
+                    <select id="indiaStateSelect" class="india-select" aria-label="Select State">
+                        ${stateOptions}
+                    </select>
+                    <select id="indiaCitySelect" class="india-select" aria-label="Select City">
+                        <!-- Cities populated by JS -->
+                    </select>
+                    <div class="india-search-wrapper">
+                        <svg class="india-search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="indiaSearchInput" class="india-search-input" placeholder="Search Indian destinations...">
+                    </div>
+                </div>
+
+                <div class="india-filters-row" id="indiaFilters">
+                    <button class="india-filter-pill active" data-filter="All">All</button>
+                    <button class="india-filter-pill" data-filter="Historical">Historical</button>
+                    <button class="india-filter-pill" data-filter="Beaches">Beaches</button>
+                    <button class="india-filter-pill" data-filter="Nature">Nature</button>
+                    <button class="india-filter-pill" data-filter="Religious">Religious</button>
+                    <button class="india-filter-pill" data-filter="Museums">Museums</button>
+                    <button class="india-filter-pill" data-filter="Parks">Parks</button>
+                    <button class="india-filter-pill" data-filter="Viewpoints">Viewpoints</button>
+                    <button class="india-filter-pill" data-filter="Adventure">Adventure</button>
+                </div>
+
+                <div id="indiaDestinationsGrid" class="india-destinations-grid">
+                    <!-- Destinations populated by JS -->
+                </div>
+                
+                <div id="indiaErrorState" class="india-error-state hidden">
+                    <h4>Unable to load Indian destinations.</h4>
+                    <p>Please check your connection and try again.</p>
+                    <button id="indiaTryAgainBtn" class="btn-primary">Try Again</button>
+                </div>
+            </div>
+        `;
+    }
+
+
     elements.countryDetailsSection.innerHTML = detailsHtml;
 
     // Attach event listeners for details top bar buttons
@@ -1109,6 +1219,11 @@ function renderCountryDetails(country) {
 
     // Initialize Leaflet Map
     initLeafletMap(country, coords);
+
+    // Initialize India Travel UI if applicable
+    if (country.cca3 === 'IND' || country.cca2 === 'IN') {
+        initIndiaTravelUI();
+    }
 }
 
 // Leaflet Map Initialization
@@ -1772,3 +1887,183 @@ function renderCompareResults() {
 
 // Launch application on DOM ready
 document.addEventListener('DOMContentLoaded', init);
+
+// --- India Travel Feature ---
+
+function initIndiaTravelUI() {
+    const stateSelect = document.getElementById('indiaStateSelect');
+    const citySelect = document.getElementById('indiaCitySelect');
+    const searchInput = document.getElementById('indiaSearchInput');
+    const filtersContainer = document.getElementById('indiaFilters');
+    const tryAgainBtn = document.getElementById('indiaTryAgainBtn');
+
+    if (!stateSelect || !citySelect) return;
+
+    // Populate cities for current state
+    function updateCities() {
+        const state = stateSelect.value;
+        const cities = INDIA_STATES_CITIES[state] || {};
+        citySelect.innerHTML = Object.keys(cities).map(city => `<option value="${city}">${city}</option>`).join('');
+        currentIndiaState = state;
+        currentIndiaCity = citySelect.value;
+        renderIndiaDestinations();
+    }
+
+    stateSelect.addEventListener('change', updateCities);
+    
+    citySelect.addEventListener('change', () => {
+        currentIndiaCity = citySelect.value;
+        renderIndiaDestinations();
+    });
+
+    let searchTimeout;
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            currentIndiaSearch = e.target.value.trim().toLowerCase();
+            searchTimeout = setTimeout(() => {
+                renderIndiaDestinations();
+            }, 300);
+        });
+    }
+
+    if (filtersContainer) {
+        filtersContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                filtersContainer.querySelectorAll('.india-filter-pill').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                currentIndiaFilter = e.target.getAttribute('data-filter');
+                renderIndiaDestinations();
+            }
+        });
+    }
+
+    if (tryAgainBtn) {
+        tryAgainBtn.addEventListener('click', () => {
+            renderIndiaDestinations();
+        });
+    }
+
+    // Initial load
+    stateSelect.value = currentIndiaState;
+    if (!INDIA_STATES_CITIES[currentIndiaState]) {
+        stateSelect.value = Object.keys(INDIA_STATES_CITIES)[0];
+        currentIndiaState = stateSelect.value;
+    }
+    updateCities();
+}
+
+async function fetchIndiaPlaces(lat, lon, filter) {
+    const cacheKey = `india_${lat}_${lon}_${filter}`;
+    if (indiaDestinationsCache[cacheKey]) {
+        return indiaDestinationsCache[cacheKey];
+    }
+
+    let categories = 'tourism.sights';
+    switch (filter) {
+        case 'Historical': categories = 'tourism.sights.castle,tourism.sights.ruines,building.historic,heritage'; break;
+        case 'Beaches': categories = 'beach'; break;
+        case 'Nature': categories = 'natural'; break;
+        case 'Religious': categories = 'religion'; break;
+        case 'Museums': categories = 'tourism.museum'; break;
+        case 'Parks': categories = 'leisure.park,national_park'; break;
+        case 'Viewpoints': categories = 'tourism.viewpoint'; break;
+        case 'Adventure': categories = 'entertainment,leisure.resort'; break;
+        default: categories = 'tourism.sights'; break;
+    }
+
+    // 50km radius
+    const radius = 50000;
+    const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lon},${lat},${radius}&bias=proximity:${lon},${lat}&limit=20&lang=en&apiKey=${GEOAPIFY_API_KEY}`;
+    
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Geoapify API Error');
+        const data = await response.json();
+        const places = parseGeoFeatures(data.features, new Set(), 20);
+        indiaDestinationsCache[cacheKey] = places;
+        return places;
+    } catch (e) {
+        console.error('Failed to fetch India destinations:', e);
+        return null;
+    }
+}
+
+async function renderIndiaDestinations() {
+    const grid = document.getElementById('indiaDestinationsGrid');
+    const errorState = document.getElementById('indiaErrorState');
+    if (!grid) return;
+
+    // Show skeletons
+    errorState.classList.add('hidden');
+    grid.innerHTML = Array(4).fill(0).map(() => `
+        <article class="india-skeleton-card">
+            <div class="india-skeleton-img"></div>
+            <div class="india-skeleton-content">
+                <div class="india-skeleton-line"></div>
+                <div class="india-skeleton-line short"></div>
+                <div class="india-skeleton-btn"></div>
+            </div>
+        </article>
+    `).join('');
+
+    const coords = INDIA_STATES_CITIES[currentIndiaState]?.[currentIndiaCity];
+    if (!coords) {
+        grid.innerHTML = '';
+        return;
+    }
+
+    const [lat, lon] = coords;
+    const places = await fetchIndiaPlaces(lat, lon, currentIndiaFilter);
+
+    if (!places) {
+        grid.innerHTML = '';
+        errorState.classList.remove('hidden');
+        return;
+    }
+
+    let filteredPlaces = places;
+    if (currentIndiaSearch) {
+        filteredPlaces = places.filter(place => 
+            place.name.toLowerCase().includes(currentIndiaSearch) || 
+            place.city.toLowerCase().includes(currentIndiaSearch) ||
+            place.country.toLowerCase().includes(currentIndiaSearch)
+        );
+    }
+
+    if (filteredPlaces.length === 0) {
+        grid.innerHTML = `<p style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 32px;">No destinations found matching your criteria.</p>`;
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    
+    filteredPlaces.forEach(place => {
+        const card = document.createElement('article');
+        card.className = 'india-destination-card';
+        
+        let displayCity = place.city || currentIndiaCity;
+        let displayState = currentIndiaState;
+        
+        card.innerHTML = `
+            <div class="india-destination-img-wrapper">
+                <img src="${place.image}" alt="${place.name}" class="india-destination-img" loading="lazy" onerror="this.src='https://picsum.photos/seed/${place.id}/600/400'">
+                <span class="india-badge">${currentIndiaFilter === 'All' ? 'Tourist Sight' : currentIndiaFilter}</span>
+            </div>
+            <div class="india-destination-content">
+                <h3 class="india-destination-title" title="${place.name}">${place.name}</h3>
+                <div class="india-destination-location">
+                    <span>📍</span> ${displayCity}, ${displayState}
+                </div>
+                <p class="india-destination-desc">${place.desc}</p>
+                <button class="india-explore-btn" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(place.name + ' ' + displayCity + ' ' + displayState)}', '_blank')">
+                    Explore →
+                </button>
+            </div>
+        `;
+        fragment.appendChild(card);
+    });
+
+    grid.innerHTML = '';
+    grid.appendChild(fragment);
+}

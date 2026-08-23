@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     /* Color Palette */
     --bg-color: #F8FAFC;
     --surface-color: #FFFFFF;
@@ -2350,37 +2350,37 @@ input, select {
     background: #334155;
 }
 
-/* --- India Travel Section --- */
-.india-travel-section {
+/* --- Country Explorer Section --- */
+.country-explorer-travel-section {
     margin-top: 48px;
     padding-top: 32px;
     border-top: 1px solid var(--border-color);
 }
 
-.india-travel-header {
+.country-explorer-travel-header {
     margin-bottom: 24px;
 }
 
-.india-travel-title {
+.country-explorer-travel-title {
     font-size: 1.8rem;
     font-weight: 800;
     margin-bottom: 8px;
     color: var(--text-main);
 }
 
-.india-travel-subtitle {
+.country-explorer-travel-subtitle {
     font-size: 1rem;
     color: var(--text-secondary);
 }
 
-.india-selectors-row {
+.country-explorer-selectors-row {
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
     margin-bottom: 24px;
 }
 
-.india-select {
+.country-explorer-select {
     padding: 12px 16px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -2398,18 +2398,18 @@ input, select {
     background-position: right 12px center;
 }
 
-.india-select:focus {
+.country-explorer-select:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-.india-search-wrapper {
+.country-explorer-search-wrapper {
     flex-grow: 1;
     position: relative;
     min-width: 250px;
 }
 
-.india-search-input {
+.country-explorer-search-input {
     width: 100%;
     padding: 12px 16px 12px 40px;
     border: 1px solid var(--border-color);
@@ -2422,12 +2422,12 @@ input, select {
     transition: all 0.2s ease;
 }
 
-.india-search-input:focus {
+.country-explorer-search-input:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-.india-search-icon {
+.country-explorer-search-icon {
     position: absolute;
     left: 12px;
     top: 50%;
@@ -2435,14 +2435,14 @@ input, select {
     color: var(--text-muted);
 }
 
-.india-filters-row {
+.country-explorer-filters-row {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 32px;
 }
 
-.india-filter-pill {
+.country-explorer-filter-pill {
     padding: 8px 16px;
     border-radius: 20px;
     background: var(--bg-color);
@@ -2454,29 +2454,29 @@ input, select {
     transition: all 0.2s ease;
 }
 
-.india-filter-pill:hover {
+.country-explorer-filter-pill:hover {
     background: var(--card-hover);
 }
 
-.india-filter-pill.active {
+.country-explorer-filter-pill.active {
     background: #1e293b;
     color: #ffffff;
     border-color: #1e293b;
 }
 
-[data-theme="dark"] .india-filter-pill.active {
+[data-theme="dark"] .country-explorer-filter-pill.active {
     background: #3b82f6;
     border-color: #3b82f6;
     color: #ffffff;
 }
 
-.india-destinations-grid {
+.country-explorer-destinations-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 24px;
 }
 
-.india-destination-card {
+.country-explorer-destination-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 12px;
@@ -2486,23 +2486,23 @@ input, select {
     flex-direction: column;
 }
 
-.india-destination-card:hover {
+.country-explorer-destination-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 24px rgba(0,0,0,0.1);
 }
 
-.india-destination-img-wrapper {
+.country-explorer-destination-img-wrapper {
     position: relative;
     width: 100%;
     padding-top: 60%; /* 5:3 Aspect Ratio */
     background: #e2e8f0;
 }
 
-[data-theme="dark"] .india-destination-img-wrapper {
+[data-theme="dark"] .country-explorer-destination-img-wrapper {
     background: #334155;
 }
 
-.india-destination-img {
+.country-explorer-destination-img {
     position: absolute;
     top: 0;
     left: 0;
@@ -2511,7 +2511,7 @@ input, select {
     object-fit: cover;
 }
 
-.india-badge {
+.country-explorer-badge {
     position: absolute;
     top: 12px;
     left: 12px;
@@ -2524,14 +2524,14 @@ input, select {
     backdrop-filter: blur(4px);
 }
 
-.india-destination-content {
+.country-explorer-destination-content {
     padding: 16px;
     display: flex;
     flex-direction: column;
     flex-grow: 1;
 }
 
-.india-destination-title {
+.country-explorer-destination-title {
     font-size: 1.2rem;
     font-weight: 700;
     margin: 0 0 8px 0;
@@ -2542,7 +2542,7 @@ input, select {
     overflow: hidden;
 }
 
-.india-destination-location {
+.country-explorer-destination-location {
     font-size: 0.9rem;
     color: #0284c7;
     font-weight: 600;
@@ -2552,7 +2552,7 @@ input, select {
     margin-bottom: 12px;
 }
 
-.india-destination-desc {
+.country-explorer-destination-desc {
     font-size: 0.9rem;
     color: var(--text-secondary);
     line-height: 1.5;
@@ -2564,7 +2564,7 @@ input, select {
     flex-grow: 1;
 }
 
-.india-explore-btn {
+.country-explorer-explore-btn {
     background: transparent;
     color: #3b82f6;
     border: 1px solid #3b82f6;
@@ -2578,12 +2578,12 @@ input, select {
     margin-top: auto;
 }
 
-.india-explore-btn:hover {
+.country-explorer-explore-btn:hover {
     background: #3b82f6;
     color: white;
 }
 
-.india-error-state {
+.country-explorer-error-state {
     text-align: center;
     padding: 48px 24px;
     background: var(--card-bg);
@@ -2591,18 +2591,18 @@ input, select {
     border: 1px dashed var(--border-color);
 }
 
-.india-error-state h4 {
+.country-explorer-error-state h4 {
     font-size: 1.25rem;
     margin: 0 0 8px 0;
     color: var(--text-main);
 }
 
-.india-error-state p {
+.country-explorer-error-state p {
     color: var(--text-secondary);
     margin: 0 0 24px 0;
 }
 
-.india-skeleton-card {
+.country-explorer-skeleton-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 12px;
@@ -2611,7 +2611,7 @@ input, select {
     flex-direction: column;
 }
 
-.india-skeleton-img {
+.country-explorer-skeleton-img {
     width: 100%;
     padding-top: 60%;
     background: linear-gradient(90deg, var(--card-hover) 25%, var(--border-color) 50%, var(--card-hover) 75%);
@@ -2619,14 +2619,14 @@ input, select {
     animation: shimmer 1.5s infinite;
 }
 
-.india-skeleton-content {
+.country-explorer-skeleton-content {
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.india-skeleton-line {
+.country-explorer-skeleton-line {
     height: 16px;
     background: linear-gradient(90deg, var(--card-hover) 25%, var(--border-color) 50%, var(--card-hover) 75%);
     background-size: 200% 100%;
@@ -2634,11 +2634,11 @@ input, select {
     border-radius: 4px;
 }
 
-.india-skeleton-line.short {
+.country-explorer-skeleton-line.short {
     width: 60%;
 }
 
-.india-skeleton-btn {
+.country-explorer-skeleton-btn {
     height: 36px;
     margin-top: 12px;
     background: linear-gradient(90deg, var(--card-hover) 25%, var(--border-color) 50%, var(--card-hover) 75%);
@@ -2653,10 +2653,10 @@ input, select {
 }
 
 @media (max-width: 768px) {
-    .india-selectors-row {
+    .country-explorer-selectors-row {
         flex-direction: column;
     }
-    .india-select {
+    .country-explorer-select {
         width: 100%;
     }
 }

@@ -76,6 +76,26 @@ const COUNTRY_COORDINATES = {
     "ZWE": [-19.0154, 29.1549], "Abkhazia": [43.0016, 41.0234]
 };
 
+// Country Explorer Feature State
+const REGION_LABELS = {
+    IND: 'State', USA: 'State', CAN: 'Province', 
+    FRA: 'Region', JPN: 'Prefecture', DEU: 'State', 
+    GBR: 'Country', AUS: 'State', ITA: 'Region',
+    BRA: 'State', CHN: 'Province', RUS: 'Oblast',
+    MEX: 'State', ESP: 'Autonomous Community', ZAF: 'Province'
+};
+
+function getRegionLabel(cca3) {
+    return REGION_LABELS[cca3] || 'Region';
+}
+
+let countryDestinationsCache = {};
+let currentExplorerCountry = null;
+let currentExplorerState = null;
+let currentExplorerCity = null;
+let currentExplorerFilter = 'All';
+let currentExplorerSearch = '';
+
 // Application State
 let allCountries = [];
 let displayedCountries = [];
@@ -805,7 +825,7 @@ function renderCountryDetails(country) {
     }
 
     // Build the Complete Country Details Page HTML
-    const detailsHtml = `
+    let detailsHtml = `
         <!-- Top Navigation & Action Bar -->
         <div class="details-nav-bar">
             <button class="btn-back-details" id="backToExploreBtn" aria-label="Back to Explore">
@@ -1064,6 +1084,53 @@ function renderCountryDetails(country) {
         </div>
     `;
 
+    // Country Explorer UI section (applies to ALL countries)
+    let regionLabel = getRegionLabel(country.cca3);
+    detailsHtml += `
+        <div class="country-explorer-section">
+            <div class="country-explorer-header">
+                <h2 class="country-explorer-title">Discover ${name} ${country.flag || ''}</h2>
+                <p class="country-explorer-subtitle">Explore popular tourist destinations across beautiful ${name} ${regionLabel.toLowerCase()}s and cities.</p>
+            </div>
+            
+            <div class="country-explorer-selectors-row">
+                <select id="countryStateSelect" class="country-explorer-select" aria-label="Select ${regionLabel}">
+                    <option value="">Loading ${regionLabel}s...</option>
+                </select>
+                <select id="countryCitySelect" class="country-explorer-select" aria-label="Select City">
+                    <option value="">Select City</option>
+                </select>
+                <div class="country-explorer-search-wrapper">
+                    <svg class="country-explorer-search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="countrySearchInput" class="country-explorer-search-input" placeholder="Search destinations...">
+                </div>
+            </div>
+
+            <div class="country-explorer-filters-row" id="countryFilters">
+                <button class="country-explorer-filter-pill active" data-filter="All">All</button>
+                <button class="country-explorer-filter-pill" data-filter="Historical">Historical</button>
+                <button class="country-explorer-filter-pill" data-filter="Beaches">Beaches</button>
+                <button class="country-explorer-filter-pill" data-filter="Nature">Nature</button>
+                <button class="country-explorer-filter-pill" data-filter="Religious">Religious</button>
+                <button class="country-explorer-filter-pill" data-filter="Museums">Museums</button>
+                <button class="country-explorer-filter-pill" data-filter="Parks">Parks</button>
+                <button class="country-explorer-filter-pill" data-filter="Viewpoints">Viewpoints</button>
+                <button class="country-explorer-filter-pill" data-filter="Adventure">Adventure</button>
+            </div>
+
+            <div id="countryDestinationsGrid" class="country-explorer-destinations-grid">
+                <!-- Destinations populated by JS -->
+            </div>
+            
+            <div id="countryErrorState" class="country-explorer-error-state hidden">
+                <h4 id="countryErrorMsg">Unable to load destinations.</h4>
+                <p>Please check your connection and try again.</p>
+                <button id="countryTryAgainBtn" class="btn-primary">Try Again</button>
+            </div>
+        </div>
+    `;
+
+
     elements.countryDetailsSection.innerHTML = detailsHtml;
 
     // Attach event listeners for details top bar buttons
@@ -1109,6 +1176,9 @@ function renderCountryDetails(country) {
 
     // Initialize Leaflet Map
     initLeafletMap(country, coords);
+
+    // Initialize Country Explorer UI
+    initCountryExplorerUI(country);
 }
 
 // Leaflet Map Initialization
@@ -1394,7 +1464,7 @@ function renderMockupFavorites() {
     const mockupGrid = document.getElementById('mockupFavoritesGrid');
     if (!mockupGrid) return;
     
-    const topFavCodes = [...favorites].slice(0, 4);
+    const topFavCodes = [...favorites].slice(0, 5);
     if (topFavCodes.length === 0) {
         mockupGrid.classList.add('hidden');
         const btnContainer = document.getElementById('mockupFavsBtnContainer');
@@ -1772,3 +1842,247 @@ function renderCompareResults() {
 
 // Launch application on DOM ready
 document.addEventListener('DOMContentLoaded', init);
+
+// --- India Travel Feature ---
+
+// --- Country Explorer Feature ---
+
+async function fetchCountryStates(countryName) {
+    try {
+        const res = await fetch('https://countriesnow.space/api/v0.1/countries/states', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ country: countryName })
+        });
+        const data = await res.json();
+        if (!data.error && data.data && data.data.states) {
+            return data.data.states.map(s => s.name);
+        }
+    } catch (e) { console.error('Failed to fetch states', e); }
+    return [];
+}
+
+async function fetchStateCities(countryName, stateName) {
+    try {
+        const res = await fetch('https://countriesnow.space/api/v0.1/countries/state/cities', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ country: countryName, state: stateName })
+        });
+        const data = await res.json();
+        if (!data.error && data.data) {
+            return data.data;
+        }
+    } catch (e) { console.error('Failed to fetch cities', e); }
+    return [];
+}
+
+async function fetchCityCoordinates(city, state, country) {
+    try {
+        const url = `https://api.geoapify.com/v1/geocode/search?city=${encodeURIComponent(city)}&state=${encodeURIComponent(state)}&country=${encodeURIComponent(country)}&format=json&apiKey=${GEOAPIFY_API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.results && data.results.length > 0) {
+            return [data.results[0].lat, data.results[0].lon];
+        }
+    } catch (e) { console.error('Failed to geocode city', e); }
+    return null;
+}
+
+async function initCountryExplorerUI(country) {
+    currentExplorerCountry = country;
+    currentExplorerFilter = 'All';
+    currentExplorerSearch = '';
+    
+    const stateSelect = document.getElementById('countryStateSelect');
+    const citySelect = document.getElementById('countryCitySelect');
+    const searchInput = document.getElementById('countrySearchInput');
+    const filtersContainer = document.getElementById('countryFilters');
+    const tryAgainBtn = document.getElementById('countryTryAgainBtn');
+
+    if (!stateSelect || !citySelect) return;
+
+    let fallbackCity = country.capital && country.capital.length > 0 ? country.capital[0] : country.name.common;
+
+    let states = await fetchCountryStates(country.name.common);
+    if (states.length === 0) {
+        states = [country.name.common];
+    }
+    
+    stateSelect.innerHTML = states.map(s => `<option value="${s}">${s}</option>`).join('');
+    currentExplorerState = states[0];
+
+    async function updateCities() {
+        citySelect.innerHTML = '<option value="">Loading Cities...</option>';
+        let cities = [];
+        if (states.length > 0 && currentExplorerState !== country.name.common) {
+            cities = await fetchStateCities(country.name.common, currentExplorerState);
+        }
+        
+        if (cities.length === 0) {
+            cities = [fallbackCity];
+        }
+        
+        citySelect.innerHTML = cities.map(c => `<option value="${c}">${c}</option>`).join('');
+        currentExplorerCity = cities[0];
+        renderExplorerDestinations();
+    }
+
+    stateSelect.addEventListener('change', async () => {
+        currentExplorerState = stateSelect.value;
+        await updateCities();
+    });
+    
+    citySelect.addEventListener('change', () => {
+        currentExplorerCity = citySelect.value;
+        renderExplorerDestinations();
+    });
+
+    let searchTimeout;
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            currentExplorerSearch = e.target.value.trim().toLowerCase();
+            searchTimeout = setTimeout(() => {
+                renderExplorerDestinations();
+            }, 300);
+        });
+    }
+
+    if (filtersContainer) {
+        filtersContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                filtersContainer.querySelectorAll('.country-explorer-filter-pill').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                currentExplorerFilter = e.target.getAttribute('data-filter');
+                renderExplorerDestinations();
+            }
+        });
+    }
+
+    if (tryAgainBtn) {
+        tryAgainBtn.addEventListener('click', () => {
+            renderExplorerDestinations();
+        });
+    }
+
+    await updateCities();
+}
+
+async function fetchExplorerPlaces(lat, lon, filter) {
+    const cacheKey = `explorer_${lat}_${lon}_${filter}`;
+    if (countryDestinationsCache[cacheKey]) {
+        return countryDestinationsCache[cacheKey];
+    }
+
+    let categories = 'tourism.sights';
+    switch (filter) {
+        case 'Historical': categories = 'tourism.sights.castle,tourism.sights.ruines,building.historic,heritage'; break;
+        case 'Beaches': categories = 'beach'; break;
+        case 'Nature': categories = 'natural'; break;
+        case 'Religious': categories = 'religion'; break;
+        case 'Museums': categories = 'tourism.museum'; break;
+        case 'Parks': categories = 'leisure.park,national_park'; break;
+        case 'Viewpoints': categories = 'tourism.viewpoint'; break;
+        case 'Adventure': categories = 'entertainment,leisure.resort'; break;
+        default: categories = 'tourism.sights'; break;
+    }
+
+    const radius = 50000;
+    const url = `https://api.geoapify.com/v2/places?categories=${categories}&filter=circle:${lon},${lat},${radius}&bias=proximity:${lon},${lat}&limit=20&lang=en&apiKey=${GEOAPIFY_API_KEY}`;
+    
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Geoapify API Error');
+        const data = await response.json();
+        const places = parseGeoFeatures(data.features, new Set(), 20);
+        countryDestinationsCache[cacheKey] = places;
+        return places;
+    } catch (e) {
+        console.error('Failed to fetch destinations:', e);
+        return null;
+    }
+}
+
+async function renderExplorerDestinations() {
+    const grid = document.getElementById('countryDestinationsGrid');
+    const errorState = document.getElementById('countryErrorState');
+    if (!grid) return;
+
+    errorState.classList.add('hidden');
+    grid.innerHTML = Array(4).fill(0).map(() => `
+        <article class="country-explorer-skeleton-card">
+            <div class="country-explorer-skeleton-img"></div>
+            <div class="country-explorer-skeleton-content">
+                <div class="country-explorer-skeleton-line"></div>
+                <div class="country-explorer-skeleton-line short"></div>
+                <div class="country-explorer-skeleton-btn"></div>
+            </div>
+        </article>
+    `).join('');
+
+    let coords = await fetchCityCoordinates(currentExplorerCity, currentExplorerState, currentExplorerCountry.name.common);
+    if (!coords) {
+        coords = currentExplorerCountry.latlng;
+    }
+    
+    if (!coords) {
+        grid.innerHTML = '';
+        errorState.classList.remove('hidden');
+        return;
+    }
+
+    const [lat, lon] = coords;
+    const places = await fetchExplorerPlaces(lat, lon, currentExplorerFilter);
+
+    if (!places) {
+        grid.innerHTML = '';
+        errorState.classList.remove('hidden');
+        return;
+    }
+
+    let filteredPlaces = places;
+    if (currentExplorerSearch) {
+        filteredPlaces = places.filter(place => 
+            place.name.toLowerCase().includes(currentExplorerSearch) || 
+            (place.city && place.city.toLowerCase().includes(currentExplorerSearch)) ||
+            (place.country && place.country.toLowerCase().includes(currentExplorerSearch))
+        );
+    }
+
+    if (filteredPlaces.length === 0) {
+        grid.innerHTML = `<p style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 32px;">No destinations found matching your criteria.</p>`;
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    
+    filteredPlaces.forEach(place => {
+        const card = document.createElement('article');
+        card.className = 'country-explorer-destination-card';
+        
+        let displayCity = place.city || currentExplorerCity;
+        let displayState = place.state || currentExplorerState;
+        
+        card.innerHTML = `
+            <div class="country-explorer-destination-img-wrapper">
+                <img src="${place.image}" alt="${place.name}" class="country-explorer-destination-img" loading="lazy" onerror="this.src='https://picsum.photos/seed/${place.id}/600/400'">
+                <span class="country-explorer-badge">${currentExplorerFilter === 'All' ? 'Tourist Sight' : currentExplorerFilter}</span>
+            </div>
+            <div class="country-explorer-destination-content">
+                <h3 class="country-explorer-destination-title" title="${place.name}">${place.name}</h3>
+                <div class="country-explorer-destination-location">
+                    <span>📍</span> ${displayCity}, ${displayState}
+                </div>
+                <p class="country-explorer-destination-desc">${place.desc}</p>
+                <button class="country-explorer-explore-btn" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(place.name + ' ' + displayCity + ' ' + displayState + ' ' + currentExplorerCountry.name.common)}', '_blank')">
+                    Explore →
+                </button>
+            </div>
+        `;
+        fragment.appendChild(card);
+    });
+
+    grid.innerHTML = '';
+    grid.appendChild(fragment);
+}

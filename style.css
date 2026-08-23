@@ -637,7 +637,7 @@ input, select {
 }
 
 .mockup-overlap-grid {
-    margin-top: 40px;
+    margin-top: 150px;
     position: relative;
     z-index: 10;
     grid-template-columns: repeat(5, 1fr);

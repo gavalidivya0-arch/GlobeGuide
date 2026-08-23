@@ -1394,7 +1394,7 @@ function renderMockupFavorites() {
     const mockupGrid = document.getElementById('mockupFavoritesGrid');
     if (!mockupGrid) return;
     
-    const topFavCodes = [...favorites].slice(0, 4);
+    const topFavCodes = [...favorites].slice(0, 5);
     if (topFavCodes.length === 0) {
         mockupGrid.classList.add('hidden');
         const btnContainer = document.getElementById('mockupFavsBtnContainer');

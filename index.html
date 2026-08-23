@@ -114,6 +114,15 @@
                     <button class="filter-pill" data-region="Europe">Europe</button>
                     <button class="filter-pill" data-region="Oceania">Oceania</button>
                 </div>
+                
+                <div id="mockupFavoritesGrid" class="countries-grid mockup-overlap-grid hidden"></div>
+                
+                <div id="mockupFavsBtnContainer" class="view-all-favorites-wrapper hidden">
+                    <button class="view-all-btn" onclick="document.getElementById('explorerHeader').scrollIntoView({behavior: 'smooth'})">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        View All Favourites &rarr;
+                    </button>
+                </div>
             </section>
 
             <!-- Stats Section -->
@@ -177,16 +186,8 @@
                 </div>
             </section>
 
-            <!-- Controls & Explorer Area (Shown on Explore Page) -->
+                <!-- Controls & Explorer Area (Shown on Explore Page) -->
             <section class="explorer hidden" id="explorerSection">
-                <div id="mockupFavoritesGrid" class="countries-grid mockup-overlap-grid hidden" style="margin-bottom: 24px;"></div>
-                
-                <div id="mockupFavsBtnContainer" class="view-all-favorites-wrapper hidden" style="margin-bottom: 60px;">
-                    <button class="view-all-btn" onclick="document.getElementById('explorerHeader').scrollIntoView({behavior: 'smooth'})">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                        View All Favourites &rarr;
-                    </button>
-                </div>
 
                 <div class="explorer-header" id="explorerHeader">
                     <div class="explorer-title">

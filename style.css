@@ -359,7 +359,7 @@ input, select {
 
 .hero.hero-favorites {
     background-image: linear-gradient(to bottom, rgba(248, 250, 252, 0) 50%, rgba(248, 250, 252, 1) 100%), url('favorites-hero-bg.png');
-    padding: 60px 28px 180px;
+    padding: 60px 28px 60px;
 }
 
 .hero-eyebrow {
@@ -637,9 +637,11 @@ input, select {
 }
 
 .mockup-overlap-grid {
-    margin-top: -180px;
+    margin-top: 40px;
     position: relative;
     z-index: 10;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
 }
 
 .explorer-header {
@@ -2249,7 +2251,7 @@ input, select {
 /* Mockup Favorite Card Styles */
 .mockup-fav-card {
     background: var(--surface-color);
-    border-radius: 12px;
+    border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     display: flex;
@@ -2265,7 +2267,7 @@ input, select {
 }
 .mockup-fav-img-wrapper {
     position: relative;
-    height: 180px;
+    height: 200px;
     width: 100%;
 }
 .mockup-fav-img-wrapper img {
@@ -2275,8 +2277,8 @@ input, select {
 }
 .mockup-fav-heart.favorite-btn {
     position: absolute !important;
-    top: 12px;
-    right: 12px;
+    top: 16px;
+    right: 16px;
     background: #FFFFFF !important;
     border-radius: 50% !important;
     width: 32px !important;

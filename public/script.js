@@ -1420,38 +1420,33 @@ function renderMockupFavorites() {
         let cardLocation = region;
         let cardDesc = 'A beautiful destination known for its amazing culture, landscapes, and heritage. Plan your next unforgettable trip here.';
         
-        let spriteX = '0%';
         if (country.cca3 === 'MDV') {
             cardTitle = 'Maldives';
             cardLocation = 'Maldives';
             cardDesc = 'Paradise on earth with crystal clear waters and white beaches.';
-            spriteX = '1%';
         } else if (country.cca3 === 'IDN') {
             cardTitle = 'Bali';
             cardLocation = 'Indonesia';
             cardDesc = 'A tropical heaven known for its beaches, culture and temples.';
-            spriteX = '25.5%';
         } else if (country.cca3 === 'GRC') {
             cardTitle = 'Santorini';
             cardLocation = 'Greece';
             cardDesc = 'Stunning sunsets, white houses and breathtaking sea views.';
-            spriteX = '50%';
         } else if (country.cca3 === 'THA') {
             cardTitle = 'Phuket';
             cardLocation = 'Thailand';
             cardDesc = 'Beautiful beaches, vibrant life and tropical adventures.';
-            spriteX = '74.5%';
         } else if (country.cca3 === 'PYF') {
             cardTitle = 'Bora Bora';
             cardLocation = 'French Polynesia';
             cardDesc = 'Luxury overwater villas and unmatched natural beauty.';
-            spriteX = '99%';
         }
 
         const card = document.createElement('article');
         card.className = 'mockup-fav-card';
         card.innerHTML = `
-            <div class="mockup-fav-img-wrapper" style="background-image: url('assets/cards-sprite.jpg'); background-size: 540% auto; background-position: ${spriteX} 35%; background-repeat: no-repeat;">
+            <div class="mockup-fav-img-wrapper">
+                <img src="https://picsum.photos/seed/${country.cca3}/600/400" alt="${cardTitle} image" loading="lazy">
                 <button class="favorite-btn mockup-fav-heart active" data-code="${country.cca3}" aria-label="Remove from favourites" title="Remove from favourites">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                 </button>

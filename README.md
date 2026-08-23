@@ -6,6 +6,7 @@
   <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript" />
   <img src="https://img.shields.io/badge/Leaflet-199900?style=for-the-badge&logo=leaflet&logoColor=white" alt="Leaflet" />
   <img src="https://img.shields.io/badge/REST_Countries_v5-2563EB?style=for-the-badge&logo=globe&logoColor=white" alt="REST Countries" />
+  <img src="https://img.shields.io/badge/Geoapify-4285F4?style=for-the-badge&logo=googlemaps&logoColor=white" alt="Geoapify Places" />
   <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License" />
 </p>
 
@@ -36,13 +37,13 @@ When selecting any country, GlobeGuide navigates to a dedicated page (`#/country
 * **🚩 Hero Showcase**: High-resolution flag presentation with ISO code tags, official title, and badges for UN Membership, Continent, Subregion, Driving Side, and International Dialing Code.
 * **📊 Quick-Glance Metrics Grid**:
   * 👥 **Population**: Formatted shorthand (e.g. `67.8M`) and exact count (`67,842,582`).
-  * 📐 **Total Area**: Formatted in $km^2$ and $sq\ mi$.
+  * 📐 **Total Area**: Formatted in km² and sq mi.
   * 🏛️ **Capital City**: Government capital seat.
   * 🗣️ **Languages**: Official and national languages spoken.
   * 💰 **Currency**: Currency name, ISO currency code, and symbol.
   * 🚗 **Driving Side**: Traffic driving side (`Left` / `Right`).
 * **📋 Deep Data Breakdown**:
-  * **Geography & Administration**: Capital, region, subregion, total area, coordinates ($Lat/Lng$).
+  * **Geography & Administration**: Capital, region, subregion, total area, coordinates (Lat/Lng).
   * **Demographics & Society**: Population totals, language tags, UN membership status, calling codes.
   * **Economy & Time Zones**: Legal currencies and symbols, UTC time zone badges, driving system.
 * **🌐 Highlighted World Map Location**:
@@ -57,14 +58,23 @@ When selecting any country, GlobeGuide navigates to a dedicated page (`#/country
 
 ---
 
-### 🌗 3. Dark Mode & Glassmorphism Design
+### 🏛️ 3. Dynamic Country Explorer (NEW)
+Explore specific regions and tourist destinations within **any country** globally.
+* **Dynamic Administrative Regions**: Automatically labels regions based on the country (e.g., *States* in USA/India, *Provinces* in Canada, *Prefectures* in Japan).
+* **Live Cities & Destinations**: Fetches cities dynamically and uses **Geoapify Geocoding API** to fetch coordinates for the selected city/region.
+* **Tourist Spots Discovery**: Connects to the **Geoapify Places API** to find and display nearby attractions, historical sites, beaches, nature parks, and more within a 50km radius.
+* **Intelligent Caching**: Caches Geoapify API responses locally to ensure instant load times when swapping filters without making redundant network requests.
+
+---
+
+### 🌗 4. Dark Mode & Glassmorphism Design
 * **Glassmorphism Navbar**: Sticky header with blur effects (`backdrop-filter: blur(12px)`).
 * **Dark / Light Theme Toggle**: Seamless CSS custom variable theme switching with persistent storage in `localStorage`.
 * **Smooth Micro-Animations**: Card lift hover effects, pulse loading skeletons, and fluid view transitions.
 
 ---
 
-### ⚖️ 4. Country Compare Tool & Favorites
+### ⚖️ 5. Country Compare Tool & Favorites
 * **Compare Tool**: Select two countries to compare population, area, languages, capital, region, and driving side side-by-side.
 * **Favorites System**: Save favorite countries with a heart toggle that persists across sessions via `localStorage`.
 
@@ -92,7 +102,7 @@ GlobeGuide/
 ├── style.css             # Comprehensive design tokens, glassmorphism, & responsive layout
 ├── script.js             # State management, SPA hash routing, Leaflet lifecycle, & API integration
 ├── data.js               # Bundled snapshot of 254 countries (offline-first fallback)
-├── config.js             # REST Countries API key configuration (gitignored)
+├── config.js             # API key configurations (gitignored)
 ├── package.json          # Node project metadata & server start script
 ├── server.js             # Node / Express static server
 ├── server.ps1            # Lightweight PowerShell HTTP server (Windows)
@@ -147,25 +157,31 @@ Open your browser at **`http://localhost:3000`**.
 
 ---
 
-## 🌐 API & Live Data Refresh
+## 🌐 APIs & Live Data Integration
 
-GlobeGuide is powered by the [REST Countries API](https://restcountries.com/) (v5):
+GlobeGuide is powered by a robust stack of public APIs:
 
-* **API Endpoint**: `https://api.restcountries.com/countries/v5`
-* **Authentication**: Bearer Token in `config.js`
-* **Fields Utilized**: `names`, `codes`, `flag`, `capitals`, `region`, `subregion`, `area`, `population`, `languages`, `currencies`, `timezones`, `cars`, `classification`, `links`, `calling_codes`, `borders`.
+1. **[REST Countries API](https://restcountries.com/) (v5)**
+   * Provides the core dataset (names, codes, flags, capitals, region, languages, borders).
+2. **[CountriesNow API](https://countriesnow.space/)**
+   * Fetches accurate administrative states/provinces and their corresponding cities for any country.
+3. **[Geoapify Geocoding API](https://www.geoapify.com/geocoding-api)**
+   * Converts dynamically fetched cities into exact latitude/longitude coordinates.
+4. **[Geoapify Places API](https://www.geoapify.com/places-api)**
+   * Discovers categorised points of interest (tourism, beaches, nature, museums) globally.
 
-### Setting Up Your API Key (Optional)
+### Setting Up Your API Keys (Optional)
 
-1. Sign up for a free API key at [REST Countries](https://restcountries.com/sign-up).
+1. Sign up for free API keys at [REST Countries](https://restcountries.com/sign-up) and [Geoapify](https://myprojects.geoapify.com/register).
 2. Create or edit `config.js` in the project root:
    ```javascript
    const REST_COUNTRIES_API_KEY = 'rc_live_your_api_key_here';
+   const GEOAPIFY_API_KEY = 'your_geoapify_api_key_here';
    ```
-3. Add your local origin (e.g. `http://localhost:8000`) to your key's allowlist in the REST Countries dashboard.
+3. Add your local origin (e.g. `http://localhost:8000`) to your key's allowlist.
 
 > [!NOTE]
-> If no API key is provided or the connection is offline, GlobeGuide automatically serves the bundled snapshot in `data.js`.
+> If no REST Countries API key is provided or the connection is offline, GlobeGuide automatically serves the bundled core snapshot in `data.js`.
 
 ---
 
@@ -179,6 +195,8 @@ GlobeGuide is powered by the [REST Countries API](https://restcountries.com/) (v
 | **Leaflet.js** | Interactive mapping with markers, popups, and OpenStreetMap tiles |
 | **LocalStorage API** | Theme preference, API cache (30 min), and saved favorites |
 | **REST Countries v5** | Global country and territory dataset |
+| **Geoapify** | Global spatial discovery (Geocoding & Places) |
+| **CountriesNow** | Deep administrative divisions |
 
 ---
 

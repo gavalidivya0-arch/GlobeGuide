@@ -1,4 +1,4 @@
-﻿:root {
+:root {
     /* Color Palette */
     --bg-color: #F8FAFC;
     --surface-color: #FFFFFF;
@@ -2351,25 +2351,25 @@ input, select {
 }
 
 /* --- Country Explorer Section --- */
-.country-explorer-travel-section {
+.country-explorer-section {
     margin-top: 48px;
     padding-top: 32px;
     border-top: 1px solid var(--border-color);
 }
 
-.country-explorer-travel-header {
-    margin-bottom: 24px;
+.country-explorer-header {
+    margin-bottom: 32px; /* Increased space as requested */
 }
 
-.country-explorer-travel-title {
+.country-explorer-title {
     font-size: 1.8rem;
     font-weight: 800;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     color: var(--text-main);
 }
 
-.country-explorer-travel-subtitle {
-    font-size: 1rem;
+.country-explorer-subtitle {
+    font-size: 1.1rem;
     color: var(--text-secondary);
 }
 

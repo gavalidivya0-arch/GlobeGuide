@@ -540,35 +540,46 @@ const GEO_REGIONS_MAP = {
     'Middle East': '34.0,12.0,63.0,42.0'
 };
 
-async function fetchWikipediaImage(query, fallbackQuery) {
-    const fetchImg = async (q) => {
-        try {
-            const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json&origin=*`;
-            const res = await fetch(url);
-            const data = await res.json();
-            if (data.query && data.query.pages) {
-                const pages = Object.values(data.query.pages);
-                if (pages.length > 0 && pages[0].imageinfo && pages[0].imageinfo.length > 0) {
-                    return pages[0].imageinfo[0].thumburl || pages[0].imageinfo[0].url;
+async function fetchWikipediaImage(query, name) {
+    const verifyTitle = (title, targetName) => {
+        if (!targetName) return true;
+        const t = title.toLowerCase();
+        const n = targetName.toLowerCase();
+        if (t.includes(n) || n.includes(t)) return true;
+        
+        // Strip common words and tokenize
+        const stopwords = ['the', 'of', 'in', 'and', 'a', 'an', 'at'];
+        const tokens = n.split(/[\s,\-]+/).filter(w => !stopwords.includes(w) && w.length > 2);
+        if (tokens.length === 0) return t.includes(n);
+        
+        // Require at least 50% of significant words to match
+        const matchCount = tokens.filter(token => t.includes(token)).length;
+        return (matchCount / tokens.length) >= 0.5;
+    };
+
+    try {
+        const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=3&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json&origin=*`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.query && data.query.pages) {
+            const pages = Object.values(data.query.pages);
+            for (const page of pages) {
+                if (page.imageinfo && page.imageinfo.length > 0 && verifyTitle(page.title, name)) {
+                    return page.imageinfo[0].thumburl || page.imageinfo[0].url;
                 }
             }
-        } catch (e) {
-            console.error('Wikimedia image fetch failed:', e);
         }
-        return null;
-    };
-    
-    let img = await fetchImg(query);
-    if (img) return img;
-    if (fallbackQuery) return await fetchImg(fallbackQuery);
+    } catch (e) {
+        console.error('Wikimedia image fetch failed:', e);
+    }
     return null;
 }
 
-window.handleImageError = async function(img, locationName) {
+window.handleImageError = async function(img, locationQuery, name) {
     img.onerror = null;
     let url = null;
-    if (locationName) {
-        url = await fetchWikipediaImage(locationName);
+    if (locationQuery) {
+        url = await fetchWikipediaImage(locationQuery, name || locationQuery.split(' ')[0]);
     }
     if (url) {
         img.src = url;
@@ -578,15 +589,29 @@ window.handleImageError = async function(img, locationName) {
 };
 
 async function fetchPlaceImage(name, city, state, country, lat, lon) {
-    const fetchCommons = async (q) => {
+    const verifyTitle = (title, targetName) => {
+        if (!targetName) return true;
+        const t = title.toLowerCase();
+        const n = targetName.toLowerCase();
+        if (t.includes(n) || n.includes(t)) return true;
+        const stopwords = ['the', 'of', 'in', 'and', 'a', 'an', 'at'];
+        const tokens = n.split(/[\s,\-]+/).filter(w => !stopwords.includes(w) && w.length > 2);
+        if (tokens.length === 0) return t.includes(n);
+        const matchCount = tokens.filter(token => t.includes(token)).length;
+        return (matchCount / tokens.length) >= 0.5;
+    };
+
+    const fetchCommons = async (q, verifyName) => {
         try {
-            const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json&origin=*`;
+            const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrnamespace=6&gsrlimit=3&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json&origin=*`;
             const res = await fetch(url);
             const data = await res.json();
             if (data.query && data.query.pages) {
                 const pages = Object.values(data.query.pages);
-                if (pages.length > 0 && pages[0].imageinfo && pages[0].imageinfo.length > 0) {
-                    return pages[0].imageinfo[0].thumburl || pages[0].imageinfo[0].url;
+                for (const page of pages) {
+                    if (page.imageinfo && page.imageinfo.length > 0 && verifyTitle(page.title, verifyName)) {
+                        return page.imageinfo[0].thumburl || page.imageinfo[0].url;
+                    }
                 }
             }
         } catch (e) {
@@ -595,15 +620,17 @@ async function fetchPlaceImage(name, city, state, country, lat, lon) {
         return null;
     };
 
-    const fetchWikiArticle = async (q) => {
+    const fetchWikiArticle = async (q, verifyName) => {
         try {
-            const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=intitle:${encodeURIComponent(q)}&gsrlimit=1&prop=pageimages&pithumbsize=600&format=json&origin=*`;
+            const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=3&prop=pageimages&pithumbsize=600&format=json&origin=*`;
             const res = await fetch(url);
             const data = await res.json();
             if (data.query && data.query.pages) {
                 const pages = Object.values(data.query.pages);
-                if (pages.length > 0 && pages[0].thumbnail) {
-                    return pages[0].thumbnail.source;
+                for (const page of pages) {
+                    if (page.thumbnail && verifyTitle(page.title, verifyName)) {
+                        return page.thumbnail.source;
+                    }
                 }
             }
         } catch (e) {
@@ -617,28 +644,28 @@ async function fetchPlaceImage(name, city, state, country, lat, lon) {
     const cityQuery = [name, city].filter(Boolean).join(' ');
     const countryQuery = [name, country].filter(Boolean).join(' ');
     
-    img = await fetchCommons(fullQuery);
+    img = await fetchCommons(fullQuery, name);
     if (img) return img;
-    img = await fetchWikiArticle(fullQuery);
+    img = await fetchWikiArticle(fullQuery, name);
     if (img) return img;
     
     if (city) {
-        img = await fetchCommons(cityQuery);
+        img = await fetchCommons(cityQuery, name);
         if (img) return img;
-        img = await fetchWikiArticle(cityQuery);
+        img = await fetchWikiArticle(cityQuery, name);
         if (img) return img;
     }
     
     if (country) {
-        img = await fetchCommons(countryQuery);
+        img = await fetchCommons(countryQuery, name);
         if (img) return img;
-        img = await fetchWikiArticle(countryQuery);
+        img = await fetchWikiArticle(countryQuery, name);
         if (img) return img;
     }
     
-    img = await fetchCommons(name);
+    img = await fetchCommons(name, name);
     if (img) return img;
-    img = await fetchWikiArticle(name);
+    img = await fetchWikiArticle(name, name);
     if (img) return img;
     
     try {

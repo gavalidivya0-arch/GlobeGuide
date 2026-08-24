@@ -540,15 +540,33 @@ const GEO_REGIONS_MAP = {
     'Middle East': '34.0,12.0,63.0,42.0'
 };
 
-async function fetchWikipediaImage(query) {
+async function fetchWikipediaImage(query, name) {
+    const verifyTitle = (title, targetName) => {
+        if (!targetName) return true;
+        const t = title.toLowerCase();
+        const n = targetName.toLowerCase();
+        if (t.includes(n) || n.includes(t)) return true;
+        
+        // Strip common words and tokenize
+        const stopwords = ['the', 'of', 'in', 'and', 'a', 'an', 'at'];
+        const tokens = n.split(/[\s,\-]+/).filter(w => !stopwords.includes(w) && w.length > 2);
+        if (tokens.length === 0) return t.includes(n);
+        
+        // Require at least 50% of significant words to match
+        const matchCount = tokens.filter(token => t.includes(token)).length;
+        return (matchCount / tokens.length) >= 0.5;
+    };
+
     try {
-        const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=1&prop=pageimages&pithumbsize=600&format=json&origin=*`;
+        const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=3&prop=pageimages&pithumbsize=600&format=json&origin=*`;
         const res = await fetch(url);
         const data = await res.json();
         if (data.query && data.query.pages) {
             const pages = Object.values(data.query.pages);
-            if (pages.length > 0 && pages[0].thumbnail) {
-                return pages[0].thumbnail.source;
+            for (const page of pages) {
+                if (page.thumbnail && verifyTitle(page.title, name)) {
+                    return page.thumbnail.source;
+                }
             }
         }
     } catch (e) {
@@ -557,11 +575,11 @@ async function fetchWikipediaImage(query) {
     return null;
 }
 
-window.handleImageError = async function(img, locationName) {
+window.handleImageError = async function(img, locationQuery, name) {
     img.onerror = null;
     let url = null;
-    if (locationName) {
-        url = await fetchWikipediaImage(locationName);
+    if (locationQuery) {
+        url = await fetchWikipediaImage(locationQuery, name || locationQuery.split(' ')[0]);
     }
     if (url) {
         img.src = url;
@@ -633,10 +651,10 @@ async function parseGeoFeatures(features, seenList = [], limit = 12) {
             const cityQuery = [name, city].filter(Boolean).join(' ');
             const countryQuery = [name, country].filter(Boolean).join(' ');
 
-            image = await fetchWikipediaImage(exactQuery);
-            if (!image && city) image = await fetchWikipediaImage(cityQuery);
-            if (!image && country) image = await fetchWikipediaImage(countryQuery);
-            if (!image) image = await fetchWikipediaImage(name);
+            image = await fetchWikipediaImage(exactQuery, name);
+            if (!image && city) image = await fetchWikipediaImage(cityQuery, name);
+            if (!image && country) image = await fetchWikipediaImage(countryQuery, name);
+            if (!image) image = await fetchWikipediaImage(name, name);
 
             if (!image) {
                 image = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3ENo Image Available%3C/text%3E%3C/svg%3E';
@@ -766,7 +784,7 @@ async function renderGeoDestinations() {
         
         card.innerHTML = `
             <div class="geo-travel-img-wrapper">
-                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="window.handleImageError(this, '${[place.name, place.city, place.country].filter(Boolean).join(' ').replace(/'/g, "\\'")}')">
+                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="window.handleImageError(this, '${[place.name, place.city, place.country].filter(Boolean).join(' ').replace(/'/g, "\\'")}', '${place.name.replace(/'/g, "\\'")}')">
                 <span class="geo-travel-badge">${place.country}</span>
             </div>
             <div class="geo-travel-content">
@@ -2151,7 +2169,7 @@ async function renderExplorerDestinations() {
         
         card.innerHTML = `
             <div class="country-explorer-destination-img-wrapper">
-                <img src="${place.image}" alt="${place.name}" class="country-explorer-destination-img" loading="lazy" onerror="window.handleImageError(this, '${[place.name, displayCity, displayState, currentExplorerCountry.name.common].filter(Boolean).join(' ').replace(/'/g, "\\'")}')">
+                <img src="${place.image}" alt="${place.name}" class="country-explorer-destination-img" loading="lazy" onerror="window.handleImageError(this, '${[place.name, displayCity, displayState, currentExplorerCountry.name.common].filter(Boolean).join(' ').replace(/'/g, "\\'")}', '${place.name.replace(/'/g, "\\'")}')">
                 <span class="country-explorer-badge">${currentExplorerFilter === 'All' ? 'Tourist Sight' : currentExplorerFilter}</span>
             </div>
             <div class="country-explorer-destination-content">

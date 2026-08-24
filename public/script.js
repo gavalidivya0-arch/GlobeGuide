@@ -615,21 +615,36 @@ async function parseGeoFeatures(features, seenList = [], limit = 12) {
 
     const places = await Promise.all(tempPlaces.map(async ({ props, name }) => {
         const city = props.city || props.state || '';
+        const state = props.state || '';
         const country = props.country || '';
+        
+        const slugId = [name, city, state, country]
+            .filter(Boolean)
+            .join('-')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
         
         let image = '';
         if (props.datasource && props.datasource.raw && props.datasource.raw.image) {
             image = props.datasource.raw.image;
         } else {
-            // Use Wikipedia for a real photo based on the name
-            image = await fetchWikipediaImage(`${name} ${city}`);
+            const exactQuery = [name, city, state, country].filter(Boolean).join(' ');
+            const cityQuery = [name, city].filter(Boolean).join(' ');
+            const countryQuery = [name, country].filter(Boolean).join(' ');
+
+            image = await fetchWikipediaImage(exactQuery);
+            if (!image && city) image = await fetchWikipediaImage(cityQuery);
+            if (!image && country) image = await fetchWikipediaImage(countryQuery);
+            if (!image) image = await fetchWikipediaImage(name);
+
             if (!image) {
                 image = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3ENo Image Available%3C/text%3E%3C/svg%3E';
             }
         }
         
         return {
-            id: props.place_id,
+            id: slugId || props.place_id,
             name: name,
             country: country,
             city: city,
@@ -751,7 +766,7 @@ async function renderGeoDestinations() {
         
         card.innerHTML = `
             <div class="geo-travel-img-wrapper">
-                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="window.handleImageError(this, '${place.name.replace(/'/g, "\\'")}')">
+                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="window.handleImageError(this, '${[place.name, place.city, place.country].filter(Boolean).join(' ').replace(/'/g, "\\'")}')">
                 <span class="geo-travel-badge">${place.country}</span>
             </div>
             <div class="geo-travel-content">
@@ -2136,7 +2151,7 @@ async function renderExplorerDestinations() {
         
         card.innerHTML = `
             <div class="country-explorer-destination-img-wrapper">
-                <img src="${place.image}" alt="${place.name}" class="country-explorer-destination-img" loading="lazy" onerror="window.handleImageError(this, '${place.name.replace(/'/g, "\\'")}')">
+                <img src="${place.image}" alt="${place.name}" class="country-explorer-destination-img" loading="lazy" onerror="window.handleImageError(this, '${[place.name, displayCity, displayState, currentExplorerCountry.name.common].filter(Boolean).join(' ').replace(/'/g, "\\'")}')">
                 <span class="country-explorer-badge">${currentExplorerFilter === 'All' ? 'Tourist Sight' : currentExplorerFilter}</span>
             </div>
             <div class="country-explorer-destination-content">

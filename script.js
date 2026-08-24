@@ -577,7 +577,7 @@ window.handleImageError = async function(img, locationName) {
     }
 };
 
-async function fetchPlaceImage(name, city, country, lat, lon) {
+async function fetchPlaceImage(name, city, state, country, lat, lon) {
     const fetchCommons = async (q) => {
         try {
             const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json&origin=*`;
@@ -613,16 +613,33 @@ async function fetchPlaceImage(name, city, country, lat, lon) {
     };
     
     let img = null;
-    img = await fetchCommons(name);
-    if (img) return img;
+    const fullQuery = [name, city, state, country].filter(Boolean).join(' ');
+    const cityQuery = [name, city].filter(Boolean).join(' ');
+    const countryQuery = [name, country].filter(Boolean).join(' ');
     
-    img = await fetchWikiArticle(name);
+    img = await fetchCommons(fullQuery);
+    if (img) return img;
+    img = await fetchWikiArticle(fullQuery);
     if (img) return img;
     
     if (city) {
-        img = await fetchCommons(`${name} ${city}`);
+        img = await fetchCommons(cityQuery);
+        if (img) return img;
+        img = await fetchWikiArticle(cityQuery);
         if (img) return img;
     }
+    
+    if (country) {
+        img = await fetchCommons(countryQuery);
+        if (img) return img;
+        img = await fetchWikiArticle(countryQuery);
+        if (img) return img;
+    }
+    
+    img = await fetchCommons(name);
+    if (img) return img;
+    img = await fetchWikiArticle(name);
+    if (img) return img;
     
     try {
         const geoUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${lat}|${lon}&ggsradius=1000&ggslimit=1&prop=pageimages&pithumbsize=600&format=json&origin=*`;
@@ -686,21 +703,29 @@ async function parseGeoFeatures(features, seenList = [], limit = 12) {
 
     const places = await Promise.all(tempPlaces.map(async ({ props, name }) => {
         const city = props.city || props.state || '';
+        const state = props.state || '';
         const country = props.country || '';
+        
+        const slugId = [name, city, state, country]
+            .filter(Boolean)
+            .join('-')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
         
         let image = '';
         if (props.datasource && props.datasource.raw && props.datasource.raw.image) {
             image = props.datasource.raw.image;
         } else {
             // Try to find an exact image, or fallback to a Static Map!
-            image = await fetchPlaceImage(name, city, country, props.lat, props.lon);
+            image = await fetchPlaceImage(name, city, state, country, props.lat, props.lon);
             if (!image) {
                 image = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3ENo Image Available%3C/text%3E%3C/svg%3E';
             }
         }
         
         return {
-            id: props.place_id,
+            id: slugId || props.place_id,
             name: name,
             country: country,
             city: city,
@@ -813,7 +838,7 @@ async function renderGeoDestinations() {
         
         card.innerHTML = `
             <div class="geo-travel-img-wrapper">
-                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="window.handleImageError(this, '${place.name.replace(/'/g, "\\'")}')">
+                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="window.handleImageError(this, '${[place.name, place.city, place.country].filter(Boolean).join(' ').replace(/'/g, "\\'")}')">
                 <span class="geo-travel-badge">${place.country}</span>
             </div>
             <div class="geo-travel-content">
@@ -2198,7 +2223,7 @@ async function renderExplorerDestinations() {
         
         card.innerHTML = `
             <div class="country-explorer-destination-img-wrapper">
-                <img src="${place.image}" alt="${place.name}" class="country-explorer-destination-img" loading="lazy" onerror="window.handleImageError(this, '${place.name.replace(/'/g, "\\'")}')">
+                <img src="${place.image}" alt="${place.name}" class="country-explorer-destination-img" loading="lazy" onerror="window.handleImageError(this, '${[place.name, displayCity, displayState, currentExplorerCountry.name.common].filter(Boolean).join(' ').replace(/'/g, "\\'")}')">
                 <span class="country-explorer-badge">${currentExplorerFilter === 'All' ? 'Tourist Sight' : currentExplorerFilter}</span>
             </div>
             <div class="country-explorer-destination-content">

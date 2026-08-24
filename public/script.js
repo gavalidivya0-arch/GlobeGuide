@@ -540,10 +540,40 @@ const GEO_REGIONS_MAP = {
     'Middle East': '34.0,12.0,63.0,42.0'
 };
 
-function parseGeoFeatures(features, seenSet = new Set(), limit = 12) {
-    const places = [];
+async function fetchWikipediaImage(query) {
+    try {
+        const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=1&prop=pageimages&pithumbsize=600&format=json&origin=*`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.query && data.query.pages) {
+            const pages = Object.values(data.query.pages);
+            if (pages.length > 0 && pages[0].thumbnail) {
+                return pages[0].thumbnail.source;
+            }
+        }
+    } catch (e) {
+        console.error('Wikipedia image fetch failed:', e);
+    }
+    return null;
+}
+
+window.handleImageError = async function(img, locationName) {
+    img.onerror = null;
+    let url = null;
+    if (locationName) {
+        url = await fetchWikipediaImage(locationName);
+    }
+    if (url) {
+        img.src = url;
+    } else {
+        img.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3ENo Image Available%3C/text%3E%3C/svg%3E';
+    }
+};
+
+async function parseGeoFeatures(features, seenList = [], limit = 12) {
+    const tempPlaces = [];
     for (const f of features) {
-        if (places.length >= limit) break;
+        if (tempPlaces.length >= limit) break;
         const props = f.properties;
         
         let name = '';
@@ -557,24 +587,48 @@ function parseGeoFeatures(features, seenSet = new Set(), limit = 12) {
         
         // Skip if the name contains Arabic characters (meaning no English translation is available)
         const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-        if (arabicRegex.test(name)) {
-            continue;
+        if (arabicRegex.test(name)) continue;
+        
+        if (!name) continue;
+        const lowerName = name.toLowerCase();
+        let isDuplicate = false;
+        
+        for (const seen of seenList) {
+            if (seen.name === lowerName) {
+                isDuplicate = true;
+                break;
+            }
+            if (lowerName.includes(seen.name) || seen.name.includes(lowerName)) {
+                // If names overlap and they are close (< ~5km apart), it's a duplicate
+                if (Math.abs(seen.lat - props.lat) < 0.05 && Math.abs(seen.lon - props.lon) < 0.05) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
         }
         
-        // Avoid duplicates
-        if (!name || seenSet.has(name.toLowerCase())) continue;
-        seenSet.add(name.toLowerCase());
+        if (isDuplicate) continue;
+        seenList.push({ name: lowerName, lat: props.lat, lon: props.lon });
         
+        tempPlaces.push({ props, name });
+    }
+
+    const places = await Promise.all(tempPlaces.map(async ({ props, name }) => {
         const city = props.city || props.state || '';
         const country = props.country || '';
         
-        // Check for image from wiki_and_media or use a generic fallback
-        let image = `https://picsum.photos/seed/${encodeURIComponent(name || city || country)}/600/400`;
+        let image = '';
         if (props.datasource && props.datasource.raw && props.datasource.raw.image) {
             image = props.datasource.raw.image;
+        } else {
+            // Use Wikipedia for a real photo based on the name
+            image = await fetchWikipediaImage(`${name} ${city}`);
+            if (!image) {
+                image = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3ENo Image Available%3C/text%3E%3C/svg%3E';
+            }
         }
         
-        places.push({
+        return {
             id: props.place_id,
             name: name,
             country: country,
@@ -585,55 +639,65 @@ function parseGeoFeatures(features, seenSet = new Set(), limit = 12) {
             lat: props.lat,
             lon: props.lon,
             countryCode: props.country_code ? props.country_code.toUpperCase() : null
-        });
-    }
+        };
+    }));
+
     return places;
 }
 
 async function fetchGeoapifyDestinations(region) {
-    if (geoDestinationsCache[region]) {
-        return geoDestinationsCache[region];
-    }
-    
-    try {
-        if (region === 'All') {
-            const regionsToFetch = ['Asia', 'Europe', 'North America', 'Middle East'];
-            const promises = regionsToFetch.map(r => {
-                const rect = GEO_REGIONS_MAP[r];
-                const url = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=rect:${rect}&limit=8&lang=en&apiKey=${GEOAPIFY_API_KEY}`;
-                return fetch(url).then(res => res.ok ? res.json() : null);
-            });
-            
-            const results = await Promise.all(promises);
-            let places = [];
-            const seen = new Set();
-            
-            for (const data of results) {
-                if (data && data.features) {
-                    const parsed = parseGeoFeatures(data.features, seen, 3);
-                    places.push(...parsed);
-                }
-            }
-            
-            // Shuffle to mix continents
-            places = places.sort(() => Math.random() - 0.5);
-            geoDestinationsCache[region] = places;
-            return places;
-        } else {
-            const rect = GEO_REGIONS_MAP[region];
-            const url = `https://api.geoapify.com/v2/places?categories=tourism.sights&filter=rect:${rect}&limit=12&lang=en&apiKey=${GEOAPIFY_API_KEY}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Geoapify API Error');
-            const data = await response.json();
-            
-            const places = parseGeoFeatures(data.features, new Set(), 12);
-            geoDestinationsCache[region] = places;
-            return places;
+    return [
+        {
+            id: 'mdv',
+            name: 'The Maldives',
+            country: 'Maldives',
+            city: '',
+            location: 'Indian Ocean',
+            desc: 'A tropical paradise known for its pristine beaches, crystal-clear waters, and luxurious overwater bungalows.',
+            image: 'assets/mdv.jpg',
+            countryCode: 'MV'
+        },
+        {
+            id: 'idn',
+            name: 'Bali',
+            country: 'Indonesia',
+            city: '',
+            location: 'Lesser Sunda Islands',
+            desc: 'An iconic island destination famous for its volcanic mountains, iconic rice paddies, beaches and coral reefs.',
+            image: 'assets/idn.jpg',
+            countryCode: 'ID'
+        },
+        {
+            id: 'grc',
+            name: 'Santorini',
+            country: 'Greece',
+            city: '',
+            location: 'Aegean Sea',
+            desc: 'Renowned for its stunning sunsets, whitewashed, cubiform houses clinging to cliffs above an underwater caldera.',
+            image: 'assets/grc.jpg',
+            countryCode: 'GR'
+        },
+        {
+            id: 'tha',
+            name: 'Phang Nga Bay',
+            country: 'Thailand',
+            city: '',
+            location: 'Strait of Malacca',
+            desc: 'Distinctive for its sheer limestone karsts that jut vertically out of the emerald-green water.',
+            image: 'assets/tha.jpg',
+            countryCode: 'TH'
+        },
+        {
+            id: 'pyf',
+            name: 'Bora Bora',
+            country: 'French Polynesia',
+            city: '',
+            location: 'Pacific Ocean',
+            desc: 'A small South Pacific island northwest of Tahiti in French Polynesia, surrounded by sand-fringed motus.',
+            image: 'assets/pyf.jpg',
+            countryCode: 'PF'
         }
-    } catch (e) {
-        console.error('Failed to fetch destinations:', e);
-        return null;
-    }
+    ];
 }
 
 async function renderGeoDestinations() {
@@ -687,7 +751,7 @@ async function renderGeoDestinations() {
         
         card.innerHTML = `
             <div class="geo-travel-img-wrapper">
-                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="this.onerror=null; this.src='https://picsum.photos/seed/${encodeURIComponent(place.name)}/600/400';">
+                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="window.handleImageError(this, '${place.name.replace(/'/g, "\\'")}')">
                 <span class="geo-travel-badge">${place.country}</span>
             </div>
             <div class="geo-travel-content">
@@ -1522,7 +1586,7 @@ function renderMockupFavorites() {
         card.className = 'mockup-fav-card';
         card.innerHTML = `
             <div class="mockup-fav-img-wrapper">
-                <img src="assets/${country.cca3.toLowerCase()}.jpg" alt="${cardTitle} image" loading="lazy" onerror="this.onerror=null; this.src='https://picsum.photos/seed/${encodeURIComponent(cardLocation)}/600/400';">
+                <img src="assets/${country.cca3.toLowerCase()}.jpg" alt="${cardTitle} image" loading="lazy" onerror="window.handleImageError(this, '${cardLocation.replace(/'/g, "\\'")}')">
                 <button class="favorite-btn mockup-fav-heart active" data-code="${country.cca3}" aria-label="Remove from favourites" title="Remove from favourites">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                 </button>
@@ -2001,7 +2065,7 @@ async function fetchExplorerPlaces(lat, lon, filter) {
         const response = await fetch(url);
         if (!response.ok) throw new Error('Geoapify API Error');
         const data = await response.json();
-        const places = parseGeoFeatures(data.features, new Set(), 20);
+        const places = await parseGeoFeatures(data.features, [], 20);
         countryDestinationsCache[cacheKey] = places;
         return places;
     } catch (e) {
@@ -2072,7 +2136,7 @@ async function renderExplorerDestinations() {
         
         card.innerHTML = `
             <div class="country-explorer-destination-img-wrapper">
-                <img src="${place.image}" alt="${place.name}" class="country-explorer-destination-img" loading="lazy" onerror="this.onerror=null; this.src='https://picsum.photos/seed/${encodeURIComponent(place.name)}/600/400';">
+                <img src="${place.image}" alt="${place.name}" class="country-explorer-destination-img" loading="lazy" onerror="window.handleImageError(this, '${place.name.replace(/'/g, "\\'")}')">
                 <span class="country-explorer-badge">${currentExplorerFilter === 'All' ? 'Tourist Sight' : currentExplorerFilter}</span>
             </div>
             <div class="country-explorer-destination-content">

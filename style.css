@@ -636,6 +636,10 @@ input, select {
     margin-bottom: 64px;
 }
 
+.explorer.compare-mode {
+    padding-top: 48px;
+}
+
 .mockup-overlap-grid {
     margin-top: 150px;
     position: relative;

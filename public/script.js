@@ -383,6 +383,8 @@ function showHomeView() {
 function showExploreView() {
     currentView = 'explore';
     showOnlyFavorites = false;
+    
+    elements.explorerSection.classList.remove('compare-mode');
     updateNavActive('navExplore');
 
     elements.countryDetailsSection.classList.add('hidden');
@@ -424,6 +426,8 @@ function showExploreView() {
 function showFavoritesView() {
     currentView = 'favorites';
     showOnlyFavorites = true;
+    
+    elements.explorerSection.classList.remove('compare-mode');
     updateNavActive('navFavorites');
 
     elements.countryDetailsSection.classList.add('hidden');
@@ -463,6 +467,8 @@ function showFavoritesView() {
 function showCompareView() {
     currentView = 'compare';
     updateNavActive('navCompare');
+    
+    elements.explorerSection.classList.add('compare-mode');
 
     elements.countryDetailsSection.classList.add('hidden');
     elements.mainExplorerView.classList.remove('hidden');
@@ -563,7 +569,7 @@ function parseGeoFeatures(features, seenSet = new Set(), limit = 12) {
         const country = props.country || '';
         
         // Check for image from wiki_and_media or use a generic fallback
-        let image = `https://picsum.photos/seed/${props.place_id}/600/400`;
+        let image = `https://picsum.photos/seed/${encodeURIComponent(name || city || country)}/600/400`;
         if (props.datasource && props.datasource.raw && props.datasource.raw.image) {
             image = props.datasource.raw.image;
         }
@@ -681,7 +687,7 @@ async function renderGeoDestinations() {
         
         card.innerHTML = `
             <div class="geo-travel-img-wrapper">
-                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="this.src='https://picsum.photos/seed/${place.id}/600/400'">
+                <img src="${place.image}" alt="${place.name}" class="geo-travel-img" loading="lazy" onerror="this.onerror=null; this.src='https://picsum.photos/seed/${encodeURIComponent(place.name)}/600/400';">
                 <span class="geo-travel-badge">${place.country}</span>
             </div>
             <div class="geo-travel-content">
@@ -1516,7 +1522,7 @@ function renderMockupFavorites() {
         card.className = 'mockup-fav-card';
         card.innerHTML = `
             <div class="mockup-fav-img-wrapper">
-                <img src="https://picsum.photos/seed/${country.cca3}/600/400" alt="${cardTitle} image" loading="lazy">
+                <img src="assets/${country.cca3.toLowerCase()}.jpg" alt="${cardTitle} image" loading="lazy" onerror="this.onerror=null; this.src='https://picsum.photos/seed/${encodeURIComponent(cardLocation)}/600/400';">
                 <button class="favorite-btn mockup-fav-heart active" data-code="${country.cca3}" aria-label="Remove from favourites" title="Remove from favourites">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="heart-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                 </button>
@@ -2066,7 +2072,7 @@ async function renderExplorerDestinations() {
         
         card.innerHTML = `
             <div class="country-explorer-destination-img-wrapper">
-                <img src="${place.image}" alt="${place.name}" class="country-explorer-destination-img" loading="lazy" onerror="this.src='https://picsum.photos/seed/${place.id}/600/400'">
+                <img src="${place.image}" alt="${place.name}" class="country-explorer-destination-img" loading="lazy" onerror="this.onerror=null; this.src='https://picsum.photos/seed/${encodeURIComponent(place.name)}/600/400';">
                 <span class="country-explorer-badge">${currentExplorerFilter === 'All' ? 'Tourist Sight' : currentExplorerFilter}</span>
             </div>
             <div class="country-explorer-destination-content">

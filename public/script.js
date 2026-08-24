@@ -584,7 +584,7 @@ window.handleImageError = async function(img, locationQuery, name) {
     if (url) {
         img.src = url;
     } else {
-        img.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3ENo Image Available%3C/text%3E%3C/svg%3E';
+        img.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3EDestination image unavailable%3C/text%3E%3C/svg%3E';
     }
 };
 
@@ -643,22 +643,17 @@ async function parseGeoFeatures(features, seenList = [], limit = 12) {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
         
-        let image = '';
-        if (props.datasource && props.datasource.raw && props.datasource.raw.image) {
-            image = props.datasource.raw.image;
-        } else {
-            const exactQuery = [name, city, state, country].filter(Boolean).join(' ');
-            const cityQuery = [name, city].filter(Boolean).join(' ');
-            const countryQuery = [name, country].filter(Boolean).join(' ');
+        const exactQuery = [name, city, state, country].filter(Boolean).join(' ');
+        const cityQuery = [name, city].filter(Boolean).join(' ');
+        const countryQuery = [name, country].filter(Boolean).join(' ');
 
-            image = await fetchWikipediaImage(exactQuery, name);
-            if (!image && city) image = await fetchWikipediaImage(cityQuery, name);
-            if (!image && country) image = await fetchWikipediaImage(countryQuery, name);
-            if (!image) image = await fetchWikipediaImage(name, name);
+        let image = await fetchWikipediaImage(exactQuery, name);
+        if (!image && city) image = await fetchWikipediaImage(cityQuery, name);
+        if (!image && country) image = await fetchWikipediaImage(countryQuery, name);
+        if (!image) image = await fetchWikipediaImage(name, name);
 
-            if (!image) {
-                image = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3ENo Image Available%3C/text%3E%3C/svg%3E';
-            }
+        if (!image) {
+            image = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3EDestination image unavailable%3C/text%3E%3C/svg%3E';
         }
         
         return {

@@ -584,7 +584,7 @@ window.handleImageError = async function(img, locationQuery, name) {
     if (url) {
         img.src = url;
     } else {
-        img.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3ENo Image Available%3C/text%3E%3C/svg%3E';
+        img.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3EDestination image unavailable%3C/text%3E%3C/svg%3E';
     }
 };
 
@@ -680,9 +680,7 @@ async function fetchPlaceImage(name, city, state, country, lat, lon) {
         }
     } catch(e) {}
     
-    // Absolute fallback: Map showing the exact location coordinates!
-    const apiKey = typeof GEOAPIFY_API_KEY !== 'undefined' ? GEOAPIFY_API_KEY : (typeof VITE_GEOAPIFY_API_KEY !== 'undefined' ? VITE_GEOAPIFY_API_KEY : 'b933121104dd45ff94d50e9b72b6db7d');
-    return `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=400&center=lonlat:${lon},${lat}&zoom=15&marker=lonlat:${lon},${lat};color:%23ff0000;size:large&apiKey=${apiKey}`;
+    return null;
 }
 
 async function parseGeoFeatures(features, seenList = [], limit = 12) {
@@ -740,15 +738,9 @@ async function parseGeoFeatures(features, seenList = [], limit = 12) {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)/g, '');
         
-        let image = '';
-        if (props.datasource && props.datasource.raw && props.datasource.raw.image) {
-            image = props.datasource.raw.image;
-        } else {
-            // Try to find an exact image, or fallback to a Static Map!
-            image = await fetchPlaceImage(name, city, state, country, props.lat, props.lon);
-            if (!image) {
-                image = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3ENo Image Available%3C/text%3E%3C/svg%3E';
-            }
+        let image = await fetchPlaceImage(name, city, state, country, props.lat, props.lon);
+        if (!image) {
+            image = 'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"%3E%3Crect width="600" height="400" fill="%23e2e8f0"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2364748b"%3EDestination image unavailable%3C/text%3E%3C/svg%3E';
         }
         
         return {
